@@ -19,6 +19,10 @@ pub fn LimitSlice(comptime T : type) type {
             return self.ptr[0 .. self.length()];
         }
 
+        pub fn clone(self: *@This()) @This() {
+            return @This() { .ptr = self.ptr, .limit = self.limit };
+        }
+
         pub fn length(self: *const @This()) usize {
             return (@ptrToInt(self.limit) - @ptrToInt(self.ptr)) / @sizeOf(@typeInfo(T).Pointer.child);
         }
@@ -27,10 +31,10 @@ pub fn LimitSlice(comptime T : type) type {
             return @ptrToInt(self.ptr + index) < @ptrToInt(self.limit);
         }
 
-        pub fn elementAt(self: *@This(), index: usize) @typeInfo(T).Pointer.child {
+        pub fn elementAtRef(self: *@This(), index: usize) zog.meta.SinglePointer(T) {
             const ptr = self.ptr + index;
             std.debug.assert(@ptrToInt(ptr) < @ptrToInt(self.limit));
-            return ptr[0];
+            return &ptr[0];
         }
 
         pub fn popMany(self: *@This(), count: usize) void {
@@ -46,11 +50,14 @@ pub fn LimitSlice(comptime T : type) type {
 
         pub fn asArrayPointer(self: *@This()) T { return self.ptr; }
 
-        pub fn sliceableOffsetOnly(self: *@This(), offset: usize) @This() {
-            if (@ptrToInt(self.ptr + offset) > @ptrToInt(self.limit))
-                unreachable;
-            return @This() { .ptr = self.ptr + offset, .limit = self.limit, };
-        }
+        // Don't think I need this function anymore, it is replaced with
+        // with clone() and popMany()
+        //
+        //pub fn sliceableOffsetOnly(self: *@This(), offset: usize) @This() {
+        //    if (@ptrToInt(self.ptr + offset) > @ptrToInt(self.limit))
+        //        unreachable;
+        //    return @This() { .ptr = self.ptr + offset, .limit = self.limit, };
+        //}
         pub fn sliceableOffsetLimit(self: *@This(), offset: usize, limit: usize) @This() {
             std.debug.assert(offset <= limit);
             std.debug.assert(@ptrToInt(self.ptr + limit) <= @ptrToInt(self.limit));

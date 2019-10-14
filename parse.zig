@@ -74,6 +74,9 @@ pub fn strtok(s: var, delims: var) StrtokResult(@typeOf(s), @typeOf(delims)) {
 }
 
 test "strtok" {
+    zog.range.testRange(
+        ([_][]const u8 {"a"[0..], "b"[0..], "c"[0..]})[0..],
+        strtok("a b c"[0..], " "[0..]));
     //zog.range.testRange([_]LimitSlice([*]const u8){
     //    zog.range.sliceRange("a"[0..]),
     //    zog.range.sliceRange("b"[0..]),

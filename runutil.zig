@@ -1,5 +1,5 @@
 const std = @import("std");
-const zog = @import("./zig.zig");
+const zog = @import("./zog.zig");
 const appendlib = zog.appendlib;
 
 // todo: use quotes if arg contains spaces

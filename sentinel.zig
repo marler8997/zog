@@ -14,13 +14,25 @@ pub fn SentinelPtr(comptime T: type, comptime sentinelValue: @typeInfo(T).Pointe
     }
     return struct {
         ptr: T,
+        pub fn init(ptr: T) @This() { return @This() { .ptr = ptr }; }
         pub fn empty(self: *@This()) bool {
-            return self.ptr.* == sentinelValue;
+            return self.ptr[0] == sentinelValue;
         }
+        pub fn clone(self: *@This()) @This() {
+            return @This() { .ptr = self.ptr };
+        }
+        pub fn elementAtRef(self: *@This(), index: usize) zog.meta.SinglePointer(T) {
+            return &self.ptr[index];
+        }
+        pub fn popMany(self: *@This(), count: usize) void {
+            self.ptr += count;
+        }
+        // TODO: asArrayPointer?
+        // TODO: sliceableOffsetLimit?
     };
 }
 
-pub fn SentinelArray(comptime T: type, comptime sentinelValue: @typeInfo(T).Pointer.child) type {
+pub fn SentinelSlice(comptime T: type, comptime sentinelValue: @typeInfo(T).Pointer.child) type {
     const ElementType = @typeInfo(T).Pointer.child;
     comptime {
         std.debug.assert(T == zog.meta.ManyPointer(T));
@@ -49,11 +61,11 @@ pub fn SentinelArray(comptime T: type, comptime sentinelValue: @typeInfo(T).Poin
     };
 }
 
-// TODO: should there be a SentinelLimitArray?
+// TODO: should there be a SentinelLimitSlice?
 
 pub fn defaultSentinelValue(comptime T: type) T {
     if (T == u8) {
-        return 0;
+        return @intCast(T, 0);
     } else @compileError("defaultSentinelValue not implemented for type: " ++ @typeName(T));
 }
 
@@ -63,13 +75,13 @@ pub fn defaultSentinelValue(comptime T: type) T {
 //
 // TODO: create reduceSentinelCustom, with accepts a custom sentinel value
 //
-pub fn reduceSentinel(x: var) SentinelArray(zog.meta.ManyPointer(@typeOf(x)), defaultSentinelValue(@typeInfo(@typeOf(x)).Pointer.child)) {
+pub fn reduceSentinel(x: var) SentinelSlice(zog.meta.ManyPointer(@typeOf(x)), defaultSentinelValue(@typeInfo(@typeOf(x)).Pointer.child)) {
     // TODO: print nice error message if it is not a valid type
     const ElementType = @typeInfo(@typeOf(x)).Pointer.child;
     std.debug.assert(x.len >= 1);
     comptime const sentinelValue = defaultSentinelValue(ElementType);
     std.debug.assert(x[x.len - 1] == sentinelValue);
-    return SentinelArray(zog.meta.ManyPointer(@typeOf(x)), sentinelValue) {
+    return SentinelSlice(zog.meta.ManyPointer(@typeOf(x)), sentinelValue) {
         .ptr = x.ptr,
         .len = x.len - 1,
     };
@@ -77,21 +89,45 @@ pub fn reduceSentinel(x: var) SentinelArray(zog.meta.ManyPointer(@typeOf(x)), de
 
 
 pub fn AssumeSentinel(comptime T: type) type {
-    // Return Either SentinelPtr or SentinelArray
-    @compileError("not implemented");
+    const errorMsg = "assumeSentinel does not support type: " ++ @typeName(T);
+    // TODO:Return Either SentinelPtr or SentinelSlice
+    switch (@typeInfo(T)) {
+        .Pointer => |info| {
+            switch (info.size) {
+                .Many => return SentinelPtr(T, defaultSentinelValue(info.child)),
+                .C => return SentinelPtr(zog.meta.ManyPointer(T), defaultSentinelValue(info.child)),
+                else => @compileError(errorMsg),
+            }
+        },
+        else => @compileError(errorMsg),
+    }
 }
 // For now, only accept many pointers and slices
 pub fn assumeSentinel(x: var) AssumeSentinel(@typeOf(x)) {
-    // Return Either SentinelPtr or SentinelArray
-    @compileError("not implemented");
+    const T = @typeOf(x);
+    const errorMsg = "assumeSentinel does not support type: " ++ @typeName(T);
+    // TODO:Return Either SentinelPtr or SentinelSlice
+    switch (@typeInfo(T)) {
+        .Pointer => |info| {
+            switch (info.size) {
+                // TODO: can't call defaultSentinelValue for some reason?
+                //.Many => return SentinelPtr(T, defaultSentinelValue(info.child)).init(x),
+                .Many => return SentinelPtr(T, 0).init(x),
+                .C => return SentinelPtr(zog.meta.ManyPointer(T), defaultSentinelValue(info.child)).init(x),
+                else => @compileError(errorMsg),
+            }
+        },
+        else => @compileError(errorMsg),
+    }
 }
 
-test "SentinelArray" {
+test "SentinelSlice" {
     // TODO: verify this is a compile error
     //_ = SentinelPtr(u8);
 
     zog.range.testRange("abc", reduceSentinel("abc\x00"[0..]));
 
     // TODO: make this work
-    //zog.range.testRange("abc", assumeSentinel(c"abc"));
+    zog.range.testRange("", assumeSentinel(c""));
+    zog.range.testRange("abc", assumeSentinel(c"abc"));
 }
