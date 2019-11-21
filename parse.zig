@@ -16,13 +16,12 @@ pub fn Strtok(comptime Sliceable: type, comptime DelimRange: type) type {
             };
         }
 
-        // Don't need to use zog.range.empty because we only support LimitSlice and SentinelPtr
-        pub fn empty(self: *@This()) bool { return zog.range.empty(&self.s); }
+        pub fn rangeEmpty(self: *@This()) bool { return zog.range.empty(&self.s); }
 
-        //pub fn next(self: *@This()) ?zog.range.SliceableSlice(Sliceable) {
-        pub fn next(self: *@This()) ?Sliceable {
-            //@compileLog("Strtok ", @typeName(Sliceable), " next returns ", @typeName(?zog.range.SliceableSlice(Sliceable)));
-            if (self.empty())
+        //pub fn rangeNext(self: *@This()) ?zog.range.SliceableSlice(Sliceable) {
+        pub fn rangeNext(self: *@This()) ?Sliceable {
+            //@compileLog("Strtok ", @typeName(Sliceable), " rangeNext returns ", @typeName(?zog.range.SliceableSlice(Sliceable)));
+            if (self.rangeEmpty())
                 return null;
             const optionalDelimIndex = zog.range.indexOfAny(&self.s, &self.delims);
             if (optionalDelimIndex) |delimIndex| {

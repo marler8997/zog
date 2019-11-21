@@ -1,30 +1,107 @@
-/// ### What is a range?
-///     A range is a sequence of values.
-/// ### What operations are supported by ranges?
-///     This module implements a set of functions that you can call with a range.
-/// ### Do you pass ranges by value or by reference?
-///     Ranges are almost always passed by reference.  A range type should represent the data that needs to be stored to manage the range.  Note that the range type is not a pointer to the data, but the data itself. For example, a slice is a pointer and a length, and a slice is also a range type, however, a pointer to a slice is not a range type.  A pointer to a slice is a reference to a range.
+/// # Ranges
 ///
-///     Why is it always passed by reference?  Consistency.  Since a range type represents the data to manage the range, if you pass the range to a function that modifies the range, then it will need to change the data that manages the range, so it must have a reference to it rather than a copy of the range.  It would be possible to pass the range by value to an operation that does not modify the range, however, this would make the interface inconsistent and could cause a large amounts of data to be copied on the stack if the range data structure is large.
+/// A range is a sequence of values.  This sequence of values could be bounded, infinite, lazy, generated on the fly or stored somewhere in memory. This module provides functions to use ranges and defines a standard interface for implementing them.
 ///
+/// ## How to use Ranges
+///
+/// ### Rule 1: Never use a range directly
+///
+/// This means never calling methods or accessing fields directly on the range.  Instead, interact with the range through the functions defined in this module.  For example, if you want to check if a range is empty, you shouldn't call `r.empty()` or `r.rangeEmpty()`, instead you would call `zog.range.empty(&r)`.  The API to use a range is quite different from the API to implement a range.  This is because the implementation to use a range dynamically adapts to the range's implementation.  This module provides a generic API that works with any range implementation.
+///
+/// IDEA: instead of calling a different free function for each operation on a range, I could implement a range type where you pass in the range data, and then that range type implements all the operations.
+/// while(zog.range.Range("hello").next()) |c| { ... }
+///
+/// ### Rule 2: Always pass ranges by reference
+///
+/// See the section "Why pass ranges by reference?" for details.
+///
+/// ### Rule 3: Use the minimal range interface you need
+///
+/// There is a pecking order in which you should use ranges.  Prefer the method that works for you that
+/// comes earlier.  The earlier methods will be compatible with more range implementations and be more efficient.
+///
+/// 1. Use next()
+///
+///     while (zog.range.next(&r)) |element| { ... }
+///
+///     If the next function is all you need, use it.  It's more efficient to support than an interface like empty/peek/pop because the range doesn't need to worry about when and how many times each operation will be called.  It has one entry point to perform all 3 operations so it doesn't need to store state between each one to allow calling any operation at any time.  Only use the empty/peek/pop interface if you need to peek at values before deciding whether or not to pop.
+///
+/// 2. Use makePeekable()
+///
+///     Use this if there is a time where you want to get the next value but don't necessarily
+///     want to pop it off the range yet.
+///
+///     var rPeekable = makePeekable(&r);
+///     for (zog.range.peek(&rPeekable)) |element| {
+///         ...
+///         zog.range.pop(&rPeekable);
+///         ...
+///     }
+///
+/// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+/// TODO: talk about using the slicing and cloning operations
+/// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 /// ### How do you create a range from another range?
 ///
-///   Some ranges may support 'cloning' which means that you can create a copy of the range and iterate over both ranges independently and they will both yield the same values.  Some range may not support this.  A struct/union can indicate support by implementing the 'clone' function.
+///   Some ranges may support 'cloning' which means that you can create a copy of the range and iterate over both ranges independently and they will both yield the same values.  Some range may not support this.  A struct/union can indicate support by implementing the 'rangeClone' function.
 ///
+///
+/// ## How to implement a Range
+///
+/// There is a different pecking order when implementing a range than using one.  You want to implement the smallest set of functions that provide the most functionality and also accurately represent the best way to use your range.  For example, if you are a range for a null-terminated string, you wouldn't implement a `length` method, because that would require iterating the entire string to implement.  However, if you were implementing a slice range, then implementing the `length` field would be appropriate.
+///
+/// ### Element Access
+///
+///     1. rangeElementRefAt(index: usize) *T
+///        Implement if elements can be accessed out of order and the range has storage for its values rather than being generated on the fly.
+///
+///     2. rangeElementAt(index: usize) T
+///        Implement if you can't implement rangeElementRefAt but you can still access elements out of order.
+///
+///     3. rangePeek() T
+///        Implement if you can't implement rangeElementRefAt or rangeElementAt (because elements can't be accessed out of order) or implement alongside rangeElementRefAt and rangeElementAt if it's more efficient.
+///
+///     4. rangeNext() ?T
+///        Implement this if you can't implement the previous functions and peeking requires extra storage.  The user can still peek using makePeekable but will only use the extra storage needed to support peek if it's required.
+///
+/// ### Bounds
+///
+///     1. rangeLength() usize
+///        Implement if remaining number of elements is known without needing to traverse the range.
+///
+///     2. rangeIndexInRange(index: usize) bool
+///        Implement if you can't implement rangeLength (could be infinite or too big for usize, etc) but you can still check whether arbitrary indices are within the range without needing to traverse the range, or, implement alongside length if it's more efficient to check an index than to calculate the length and compare an index to it.
+///
+///     3. rangeEmpty() bool
+///        Implement if you can't implement rangeLength/rangeIndexInRange or implement it alonside them if it's more efficient.
+///
+///     4. rangeNext (see rangeNext in the Element Access section above)
+///
+/// ### Iteration
+///
+///     1. rangePopMany(count: usize) void
+///        Implement if elements can be popped more efficiently in groups than one at a time.
+///
+///     2. rangePopOne() void
+///        Implement if the range only supports popping one element at a time. You could also choose to implement this alongside rangePopMany if the singe value case is more efficient.
+///
+/// ### Slicing
+///
+/// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+/// TODO
+/// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+///
+/// ### Cloning
+///
+///     1. rangeClone() T
+///        Implement if you can create a copy of the range and iterate over both the original and the copy independently yielding the same values.  This is an important function to enable many operations on ranges, implement it if you can.
 ///
 ///
 /// Thoughts and Notes
 /// --------------------------------------------------------------------------------
-/// * when designing the functions that a range can implement, I try to break up every operation as much as I can.  This helps simplify what the range has to implement in order to support all the operations it needs.  For example, a range could implement a function that returns the element at a given index.  This function could return an optional value in case the index is out of range.  However, this proposed operation can be split into 2 smaller operations, an operation that checks if the index is in range and then an operation to retrieve the element.   So in this case, the range implements both operations separately and then they can be re-used in higher-level operations.
-
-
-// NOTES:
-// I think elementAt and peekTo are duplicating the same functionality.  Not sure which
-// one is better. The only difference was that peekTo returned an optional value.  Instead,
-// I think just having elementAt is good, it should assert on indexOfOfRange.  If a program
-// wants to check an index, they can can call indexInRange beforehand.
-//
-
+/// * when designing the range implementation interface, I try to break up every operation as much as I can.  This helps simplify what the range has to implement in order to support all the operations it needs.  For example, a range could implement a function that returns the element at a given index.  This function could return an optional value in case the index is out of range.  However, this proposed operation can be split into 2 smaller operations, an operation that checks if the index is in range and then an operation to retrieve the element.   So in this case, the range implements both operations separately and then they can be re-used in higher-level operations.
+///
+///
 // The sliceable functions like sliceableOffsetLimit, sliceableOffsetOnly and sliceableLimitLength
 // actually implement 2 functions.  One is it copies a new "view" into the range and then it
 // limits it somehow.  For example, if you had another function called "cloneView" that just created
@@ -36,60 +113,12 @@
 // Because of this, I think that instead of the sliceable functions, I should probably create a cloneView
 // function and a popMany function.  I may still want the sliceableFunctions in zog.range, however, they
 // probably won't need to be implemented in the ranges themselves.
-
-
-/// How to use ranges:
 ///
-/// Ranges have a wide variety of ways to be defined.  As such, range methods should never be
-/// called directly.  Instead, methods that use ranges should use the free functions found in this module
-/// to interact with ranges. For example, if you want to check if a range is empty, you shouldn't call
-/// `r.empty()`, instead you would call `zog.range.empty(&r)`.
+/// ## Why pass ranges by reference?
 ///
-/// There is a pecking order in which you should use ranges.  Prefer the method that works for you that
-/// comes earlier.  The earlier methods will be compatible with more ranges and be more efficient.
+/// A range type should represent the data that needs to be stored to manage the range.  Note that the range type is not a pointer to the data, but the data itself. For example, a slice is a pointer and a length, and a slice is also a range type, however, a pointer to a slice is not a range type.  A pointer to a slice is a reference to a range.
 ///
-/// 1. Use next()
-///     while (zog.range.next(&r)) |element| { ... }
-/// 2. Use makePeekable()
-///     Use this if there is a time where you want to get the next value but don't necessarily
-///     want to pop it off the range yet.
-///
-///     var rPeek = makePeekable(&r);
-///     for (zog.range.peek(&rPeek)) |element| {
-///         ...
-///         zog.range.pop(&rPeek);
-///         ...
-///     }
-///
-/// There is a different pecking order if you are implementing a range.  You want to implement the smallest
-/// set of functions that provide the most functionality and also accurately represent the best way to
-/// use your range.  For example, if you are a range for a null-terminated string, you wouldn't implement
-/// a `length` method, because that would require iterating the entire string to implement.  However, if
-/// you were implementing a slice range, then implementing the `length` field would be appropriate.
-///
-/// 1. elementAtRef or elementAt
-///    elementAtRef should be preferred as it is more powerful.  It should be implemented if it makes sense.
-///    If you implement this, you should probably also implement:
-///        * length or indexInRange
-///        * popMany or pop
-///    If elementAt can't be implemented, should front be implemented instead?
-/// 2. length (prefer over indexInRange)
-/// 3. indexInRange: implement if either not implementing length, or if it is more efficient than length
-/// 4. empty
-///    If your range implements length or indexInRange should it implement empty?
-///    I think if the empty function is smaller/quicker than a length or indexInRange check
-///    then the range should probably still implement empty.
-///
-///
-
-
-///
-/// Range Use Case: Indexable
-/// ---------------------------------
-/// pub fn elementRefAt(rref: var, index: usize) *T; // defined by range
-/// pub fn elementAt(rref: var, index: usize) T;     // defined by zog.range, calls elementRefAt
-///
-///
+/// Why is it always passed by reference?  Consistency.  Since a range type represents the data to manage the range, if you pass the range to a function that modifies the range, then it will need to change the data that manages the range, so it must have a reference to it rather than a copy of the range.  It would be possible to pass the range by value to an operation that does not modify the range, however, this would make the interface inconsistent and could cause a large amounts of data to be copied on the stack if the range data structure is large.
 
 const builtin = @import("builtin");
 const std = @import("std");
@@ -97,18 +126,11 @@ const testing = std.testing;
 
 const zog = @import("./zog.zig");
 
-
-// When should a range be used?  If you require the ability to slice then data then you probably
-// should just accept a slice.  Otherwise, slicing would require allocation each time.
-//
-// I could see a reason for having an 'indexable' interface, but not a 'sliceable' one.  If you need
-// the ability to slice, then you would either need it as a slice already, or you would have to allocate
-// memory every time you make a new slice.
-//
 // ------
-// empty/front/popFront vs next
+// empty/front/pop vs next
 //
 //   * there may be times where you want to check if a range is empty but not get the value yet
+
 //   * there may be time where you want to get the value, but not pop yet (peek)
 //   * if you have next(), it may allow some structures to need less "state"
 //
@@ -139,18 +161,20 @@ pub fn RangeElement(comptime T: type) type {
         .Pointer => |info| return info.child,
         .Struct, .Union => {
             // Check next first, as this is the lowest-common-denominator of a range
-            if (@hasDecl(T, "next")) {
-                const U = @typeOf(T.peek).Fn.return_type;
-                return U.Optional.child;
+            if (@hasDecl(T, "rangeNext")) {
+                if (@typeInfo(@typeOf(T.rangeNext)).Fn.return_type) |t| {
+                    return @typeInfo(t).Optional.child;
+                } else @compileError("rangeNext must return a type");
             } else if (@hasDecl(T, "peek")) {
-            } else if (@hasDecl(T, "elementAt")) {
-                if (@typeInfo(@typeOf(T.elementAt)).Fn.return_type) |t| {
+                @compileError("not implemented");
+            } else if (@hasDecl(T, "rangeElementAt")) {
+                if (@typeInfo(@typeOf(T.rangeElementAt)).Fn.return_type) |t| {
                     return t;
-                } else @compileError("elementAt must return a type");
-            } else if (@hasDecl(T, "elementAtRef")) {
-                if (@typeInfo(@typeOf(T.elementAtRef)).Fn.return_type) |t| {
+                } else @compileError("rangeElementAt must return a type");
+            } else if (@hasDecl(T, "rangeElementAtRef")) {
+                if (@typeInfo(@typeOf(T.rangeElementAtRef)).Fn.return_type) |t| {
                     return @typeInfo(t).Pointer.child;
-                } else @compileError("elementAtRef must return a type");
+                } else @compileError("rangeElementAtRef must return a type");
             } else @compileError(errorMsg);
         },
         else => @compileError(errorMsg),
@@ -168,27 +192,27 @@ pub fn CounterRange(comptime T: type) type {
                 .limit = limit,
             };
         }
-        // Cloneable
-        pub fn clone(self: *@This()) @This() {
-            return @This() { .next = self.next, .limit = self.limit };
+        // do not implement rangeElementAtRef because we generate these values as we go
+        pub fn rangeElementAt(self: *@This(), index: usize) T
+        {
+            const result = self.next + index;
+            std.debug.assert(result < self.limit);
+            return @intCast(T, result);
         }
-        // SkipIterable
-        pub fn popMany(self: *@This(), count: usize) void
+        pub fn rangeLength(self: *@This()) usize { return self.limit - self.next; }
+
+        // we implement rangeEmpty even though we don't need to because it's a bit
+        // more efficient than the rangeLength implementation
+        pub fn rangeEmpty(self: *@This()) bool { return self.next == self.limit; }
+
+        pub fn rangePopMany(self: *@This(), count: usize) void
         {
             const newNext = self.next + count;
             std.debug.assert(newNext <= self.limit);
             self.next = @intCast(T, newNext);
         }
-        // EmptyPeekable
-        pub fn empty(self: *@This()) bool { return self.next == self.limit; }
-        // LengthPeekable
-        pub fn length(self: *@This()) usize { return self.limit - self.next; }
-        // Indexable
-        pub fn elementAt(self: *@This(), index: usize) T
-        {
-            const result = self.next + index;
-            std.debug.assert(result < self.limit);
-            return @intCast(T, result);
+        pub fn rangeClone(self: *@This()) @This() {
+            return @This() { .next = self.next, .limit = self.limit };
         }
     };
 }
@@ -210,41 +234,8 @@ test "CounterRange" {
 // TODO: the default file range should accept a buffer and return slices to that buffer
 pub const FileRange = struct {
     file: File,
-    pub fn next(self: *@This()) ?u8 { return file.read(); }
+    pub fn rangeNext(self: *@This()) ?u8 { return file.read(); }
 };
-
-
-// Cloneable: clone the iterator so you can iterate multiple times
-//   fn clone() T;
-// LengthPeekable:
-//   fn length() usize;
-// NextIterable: Use if implementing peek/pop requires extra storage
-//   fn next() T?;
-// OneIterable:
-//   fn pop() void; // pop the next value without returning it
-// SkipIterable:
-//   fn popMany(count: usize) void; // pop `count` values
-// CanQueryIndexInBound:
-//   fn indexInRange(index: usize) bool
-// RefIndexable:
-//   fn elementAtRef(index: usize) *T (preferred over Indexable)
-// ValueIndexable:
-//   fn elementAt(index: usize) T (prefer RefIndexable if possible)
-// EmptyPeekable: Defined if you can check if the range is empty.  This should ONLY be supported if it can be supported without storing extra state.
-//   fn empty() bool;
-// IndexEmptyPeekable?  fn empty(usize) bool;
-// OnePeekRange:
-//   fn peek() T;
-//   fn optionalPeek() ?T; // not sure if this is necessary
-//   NOTE: multiple peek should implement elementAt
-// Sliceable: also implies it is indexable
-//   fn slice(offset: usize, limit: usize) T;
-//
-
-// Helper methods
-// next()
-// Iterable/ValueIndexable  :  fn next() T { var n = self.elementAt(0); if (n) self.pop(); return n; }
-// Iterable/OnePeekRange:  fn next() T { var n = self.peek(); if (n) self.pop(); return n; }
 
 // `expected` is an array of the expected items that will be enumerated by `r`
 pub fn testRange(expected: var, r: var) void {
@@ -257,9 +248,9 @@ pub fn testRange(expected: var, r: var) void {
             std.debug.warn("range has more than the expected {} element(s)\n", expected.len);
             @panic("range has too many elements");
         }
-        //std.debug.warn("\nexpected: {}", expected[expectedIndex]);
-        //std.debug.warn("\nactual  : {}\n", actual);
-        testing.expect(std.meta.eql(expected[expectedIndex], actual));
+        //std.debug.warn("\nexpected: '{}' (type={})", expected[expectedIndex], @typeName(@typeOf(expected[expectedIndex])));
+        //std.debug.warn("\nactual  : '{}' (type={})\n", actual, @typeName(@typeOf(actual)));
+        testing.expect(zog.compare.deepEquals(expected[expectedIndex], actual));
         expectedIndex += 1;
     }
     testing.expect(expectedIndex == expected.len);
@@ -300,8 +291,8 @@ pub fn empty(rref: var) bool {
             }
         },
         .Struct, .Union => {
-            if (@hasDecl(T, "empty")) {
-                return rref.empty();
+            if (@hasDecl(T, "rangeEmpty")) {
+                return rref.rangeEmpty();
             } else @compileError(errorMsg);
         },
         else => @compileError(errorMsg),
@@ -313,8 +304,8 @@ test "empty" {
     testing.expect(!empty(&"a"[0..]));
     testing.expect(empty(&sliceRange(""[0..])));
     testing.expect(!empty(&sliceRange("b"[0..])));
-    testing.expect(empty(&zog.sentinel.assumeSentinel(c"")));
-    testing.expect(!empty(&zog.sentinel.assumeSentinel(c"abc")));
+    testing.expect(empty(&zog.sentinel.assumeSentinel("")));
+    testing.expect(!empty(&zog.sentinel.assumeSentinel("abc")));
     testing.expect(empty(&CounterRange(u8).init(0, 0)));
     testing.expect(!empty(&CounterRange(u8).init(0, 1)));
 }
@@ -331,8 +322,8 @@ pub fn clone(rref: var) @typeOf(rref.*) {
             }
         },
         .Struct, .Union => {
-            if (@hasDecl(T, "clone")) {
-                return rref.clone();
+            if (@hasDecl(T, "rangeClone")) {
+                return rref.rangeClone();
             } else @compileError(errorMsg);
         },
         else => @compileError(errorMsg),
@@ -359,10 +350,10 @@ pub fn pop(rref: var) void {
             }
         },
         .Struct, .Union => {
-            if (@hasDecl(T, "pop")) {
-                rref.pop();
-            } else if (@hasDecl(T, "popMany")) {
-                rref.popMany(1);
+            if (@hasDecl(T, "rangePopOne")) {
+                rref.rangePopOne();
+            } else if (@hasDecl(T, "rangePopMany")) {
+                rref.rangePopMany(1);
             } else @compileError(errorMsg);
         },
         else => @compileError(errorMsg),
@@ -392,8 +383,8 @@ pub fn popMany(rref: var, count: usize) void {
             }
         },
         .Struct, .Union => {
-            if (@hasDecl(T, "popMany")) {
-                rref.popMany(count);
+            if (@hasDecl(T, "rangePopMany")) {
+                rref.rangePopMany(count);
             } else @compileError(errorMsg);
         },
         else => @compileError(errorMsg),
@@ -411,13 +402,13 @@ pub fn peek(rref: var) RangeElement(@typeOf(rref.*)) {
             }
         },
         .Struct, .Union => {
-            if (@hasDecl(T, "peek")) {
-                return rref.peek();
-            } else if (@hasDecl(T, "elementAt")) {
-                return rref.elementAt(0);
-            } else if (@hasDecl(T, "elementAtRef")) {
-                return rref.elementAtRef(0).*;
-            } else @compileError("peek does not seem to support this type");
+            if (@hasDecl(T, "rangePeek")) {
+                return rref.rangePeek();
+            } else if (@hasDecl(T, "rangeElementAt")) {
+                return rref.rangeElementAt(0);
+            } else if (@hasDecl(T, "rangeElementAtRef")) {
+                return rref.rangeElementAtRef(0).*;
+            } else @compileError(errorMsg);
         },
         else => @compileError(errorMsg),
     }
@@ -438,11 +429,12 @@ test "optionalPeek" {
 }
 
 pub fn Peekable(comptime T: type) type {
-    const Range = @typeOf(T).Pointer.child;
-    if (@hasDecl(Range, "peek") || @hasDecl(Range, "elementAt")) {
+    if (@hasDecl(T, "rangePeek") ||
+        @hasDecl(T, "rangeElementAt") ||
+        @hasDecl(T, "rangeElementAtRef")) {
         return T;
-    } else { // assume there is a 'next' method
-        const NextReturnType = @typeInfo(T.next).Fn.return_type;
+    } else { // assume there is a 'rangeNext' method
+        const NextReturnType = @typeInfo(T.rangeNext).Fn.return_type;
         return struct {
             rref: T,
             peeked: bool,
@@ -454,10 +446,9 @@ pub fn Peekable(comptime T: type) type {
                     .peekValue = undefined,
                 };
             }
-            pub fn peek(self: *@This()) NextReturnType {
+            pub fn rangePeek(self: *@This()) NextReturnType {
                 if (!self.peeked) {
-                    //self.peekValue = next(self.rref);
-                    self.peekValue = self.rref.next();
+                    self.peekValue = next(self.rref);
                     self.peeked = true;
                 }
                 return self.peekValue;
@@ -467,10 +458,11 @@ pub fn Peekable(comptime T: type) type {
     }
 
 }
-pub fn makePeekable(rref: var) Peekable(@typeOf(rref)) {
-    if (@hasDecl(@typeOf(r.*), "peek")
-        || @hasDecl(@typeOf(r.*), "elementAt")
-        || @hasDecl(@typeOf(r.*), "elementAtRef")) {
+pub fn makePeekable(rref: var) Peekable(@typeOf(rref.*)) {
+    const T = @typeOf(rref.*);
+    if (@hasDecl(T, "rangePeek") ||
+        @hasDecl(T, "rangeElementAt") ||
+        @hasDecl(T, "rangeElementAtRef")) {
         return rref;
     } else {
         return Peekable(@typeOf(rref)).init(rref);
@@ -481,8 +473,8 @@ pub fn next(rref: var) ?RangeElement(@typeOf(rref.*)) {
     const T = @typeOf(rref.*);
     switch (@typeInfo(T)) {
         .Struct, .Union => {
-            if (@hasDecl(T, "next")) {
-                return rref.next();
+            if (@hasDecl(T, "rangeNext")) {
+                return rref.rangeNext();
             } else {
                 if (empty(rref)) return null;
                 var value = peek(rref);
@@ -503,11 +495,10 @@ pub fn length(rref: var) usize {
     const T = @typeOf(rref.*);
     if (@hasField(T, "len")) {
         return rref.len;
-    } else if (@hasDecl(T, "length")) {
-        return rref.length();
+    } else if (@hasDecl(T, "rangeLength")) {
+        return rref.rangeLength();
     } else @compileError("don't know how to get length of " ++ @typeName(@typeOf(rref)));
 }
-
 
 //fn RangeType(comptime T: type) type {
 //    switch (@typeInfo(T)) {
@@ -539,7 +530,7 @@ pub fn length(rref: var) usize {
 /// returns true if found, false otherwise
 pub fn popFind(rref: var, element: var) bool {
     while (next(rref)) |e| {
-        if (std.meta.eql(e, element))
+        if (zog.compare.deepEquals(e, element))
             return true;
     }
     return false;
@@ -574,9 +565,9 @@ pub fn popFindAny(rref: var, any: var) bool {
     while (next(rref)) |e| {
         // need to clone so that we can start from the beginning
         // of any on the next iteration
-        var anyClone = any.clone();
+        var anyClone = clone(any);
         for (next(&anyClone)) |e2| {
-            if (std.meta.eql(e, e2))
+            if (zog.compare.deepEquals(e, e2))
                 return true;
         }
     }
@@ -605,7 +596,7 @@ test "indexOfAny" {
 // TODO: sliceableOffsetLength?
 
 // TODO: if the type does not support sliceableOffsetLimit but does support
-//       popMany and shrinkMany then we can use those
+//       rangePopMany and shrinkMany then we can use those
 pub fn sliceableOffsetLimit(rref: var, offset: usize, limit: usize) @typeOf(rref.*) {
     const T = @typeOf(rref.*);
     const errorMsg = "don't know how to implement sliceableOffsetLimit for type " ++ @typeName(T);
@@ -625,7 +616,7 @@ test "sliceableOffsetLimit" {
     testing.expect(zog.mem.sliceEqual("a"[0..], sliceableOffsetLimit(&"a"[0..], 0, 1)));
     testing.expect(zog.mem.sliceEqual("34"[0..], sliceableOffsetLimit(&"123456"[0..], 2, 4)));
 
-    //testing.expect(std.meta.eql(&sliceRange("bc"[0..]), sliceableOffsetLimit(&sliceRange("abcd"[0..]), 1, 3)));
+    //testing.expect(zog.compare.deepEquals(&sliceRange("bc"[0..]), sliceableOffsetLimit(&sliceRange("abcd"[0..]), 1, 3)));
     _ = sliceableOffsetLimit(&sliceRange("abcd"[0..]), 1, 3);
 
     // TODO: CounterRange not supported yet, need to allow sliceableOffsetLimit to fallback
@@ -684,8 +675,8 @@ pub fn indexInRange(rref: var, index: usize) bool {
     const errorMsg = "don't know how to implement indexInRange for type " ++ @typeName(T);
     switch (@typeInfo(T)) {
         .Struct, .Union => {
-            if (@hasDecl(T, "indexInRange")) {
-                return rref.indexInRange(index);
+            if (@hasDecl(T, "rangeIndexInRange")) {
+                return rref.rangeIndexInRange(index);
             } else {
                 return index < length(rref);
             }
@@ -719,10 +710,10 @@ pub fn elementAt(rref: var, index: usize) RangeElement(@typeOf(rref.*)) {
             }
         },
         .Struct, .Union => {
-            if (@hasDecl(T, "elementAt")) {
-                return rref.elementAt(index);
-            } else if (@hasDecl(T, "elementAtRef")) {
-                return rref.elementAtRef(index).*;
+            if (@hasDecl(T, "rangeElementAt")) {
+                return rref.rangeElementAt(index);
+            } else if (@hasDecl(T, "rangeElementAtRef")) {
+                return rref.rangeElementAtRef(index).*;
             } else @compileError(errorMsg);
         },
         else => @compileError(errorMsg),

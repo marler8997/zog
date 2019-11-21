@@ -16,42 +16,42 @@ pub fn LimitSlice(comptime T : type) type {
         pub fn ManyPointer() type { return T; }
 
         pub fn asSlice(self: *const @This()) zog.meta.Slice(T) {
-            return self.ptr[0 .. self.length()];
+            return self.ptr[0 .. self.rangeLength()];
         }
 
-        pub fn clone(self: *@This()) @This() {
+        pub fn rangeClone(self: *@This()) @This() {
             return @This() { .ptr = self.ptr, .limit = self.limit };
         }
 
-        pub fn length(self: *const @This()) usize {
+        pub fn rangeLength(self: *const @This()) usize {
             return (@ptrToInt(self.limit) - @ptrToInt(self.ptr)) / @sizeOf(@typeInfo(T).Pointer.child);
         }
         // Implementing indexInRange since length requires a divide
-        pub fn indexInRange(self: *const @This(), index: usize) bool {
+        pub fn rangeIndexInRange(self: *const @This(), index: usize) bool {
             return @ptrToInt(self.ptr + index) < @ptrToInt(self.limit);
         }
 
-        pub fn elementAtRef(self: *@This(), index: usize) zog.meta.SinglePointer(T) {
+        pub fn rangeElementAtRef(self: *@This(), index: usize) zog.meta.SinglePointer(T) {
             const ptr = self.ptr + index;
             std.debug.assert(@ptrToInt(ptr) < @ptrToInt(self.limit));
             return &ptr[0];
         }
 
-        pub fn popMany(self: *@This(), count: usize) void {
+        pub fn rangePopMany(self: *@This(), count: usize) void {
             const newPtr = self.ptr + count;
             std.debug.assert(@ptrToInt(newPtr) <= @ptrToInt(self.limit));
             self.ptr = newPtr;
         }
 
-        // empty function defined because the empty check is more efficient than checking an index
-        pub fn empty(self: *const @This()) bool {
+        // rangeEmpty function defined because the empty check is more efficient than checking an index
+        pub fn rangeEmpty(self: *const @This()) bool {
             return self.ptr == self.limit;
         }
 
         pub fn asArrayPointer(self: *@This()) T { return self.ptr; }
 
         // Don't think I need this function anymore, it is replaced with
-        // with clone() and popMany()
+        // with rangeClone() and rangePopMany()
         //
         //pub fn sliceableOffsetOnly(self: *@This(), offset: usize) @This() {
         //    if (@ptrToInt(self.ptr + offset) > @ptrToInt(self.limit))

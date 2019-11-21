@@ -15,16 +15,16 @@ pub fn SentinelPtr(comptime T: type, comptime sentinelValue: @typeInfo(T).Pointe
     return struct {
         ptr: T,
         pub fn init(ptr: T) @This() { return @This() { .ptr = ptr }; }
-        pub fn empty(self: *@This()) bool {
+        pub fn rangeEmpty(self: *@This()) bool {
             return self.ptr[0] == sentinelValue;
         }
-        pub fn clone(self: *@This()) @This() {
+        pub fn rangeClone(self: *@This()) @This() {
             return @This() { .ptr = self.ptr };
         }
-        pub fn elementAtRef(self: *@This(), index: usize) zog.meta.SinglePointer(T) {
+        pub fn rangeElementAtRef(self: *@This(), index: usize) zog.meta.SinglePointer(T) {
             return &self.ptr[index];
         }
-        pub fn popMany(self: *@This(), count: usize) void {
+        pub fn rangePopMany(self: *@This(), count: usize) void {
             self.ptr += count;
         }
         // TODO: asArrayPointer?
@@ -45,16 +45,16 @@ pub fn SentinelSlice(comptime T: type, comptime sentinelValue: @typeInfo(T).Poin
     return struct {
         ptr: T,
         len: usize,
-        pub fn empty(self: *@This()) bool {
+        pub fn rangeEmpty(self: *@This()) bool {
             return self.len == 0;
         }
-        pub fn length(self: *@This()) usize { return self.len; }
-        pub fn popMany(self: *@This(), count: usize) void {
+        pub fn rangeLength(self: *@This()) usize { return self.len; }
+        pub fn rangePopMany(self: *@This(), count: usize) void {
             std.debug.assert(count <= self.len);
             self.ptr += count;
             self.len -= count;
         }
-        pub fn elementAtRef(self: *@This(), index: usize) zog.meta.SinglePointer(T) {
+        pub fn rangeElementAtRef(self: *@This(), index: usize) zog.meta.SinglePointer(T) {
             std.debug.assert(index < self.len);
             return &self.ptr[index];
         }
@@ -128,6 +128,6 @@ test "SentinelSlice" {
     zog.range.testRange("abc", reduceSentinel("abc\x00"[0..]));
 
     // TODO: make this work
-    zog.range.testRange("", assumeSentinel(c""));
-    zog.range.testRange("abc", assumeSentinel(c"abc"));
+    zog.range.testRange("", assumeSentinel(""));
+    zog.range.testRange("abc", assumeSentinel("abc"));
 }
