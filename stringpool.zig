@@ -1,6 +1,8 @@
 const std = @import("std");
 const StringHashMap = std.hash_map.StringHashMap;
 
+const zog = @import("./zog.zig");
+
 /// Takes an allocator and manages a set of strings.
 /// Every string in the pool is owned by the pool.
 pub const StringPool = struct {
@@ -32,8 +34,9 @@ test "stringpool"
     var pool = StringPool.init(std.heap.direct_allocator);
     const s = try pool.add("hello");
     {
-        var buf : [5]u8 = "hello";
-        const s2 = try pool.add(buf);
+        var buf : [5]u8 = undefined;
+        zog.mem.copy(buf[0..], "hello");
+        const s2 = try pool.add(buf[0..]);
         std.testing.expect(s.ptr == s2.ptr);
     }
 }

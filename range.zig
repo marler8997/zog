@@ -126,6 +126,11 @@ const testing = std.testing;
 
 const zog = @import("./zog.zig");
 
+
+const multipassrange = @import("./range/multipassrange.zig");
+pub const MultiPassRange = multipassrange.MultiPassRange;
+pub const multiPassRange = multipassrange.multiPassRange;
+
 // ------
 // empty/front/pop vs next
 //
@@ -171,10 +176,10 @@ pub fn RangeElement(comptime T: type) type {
                 if (@typeInfo(@typeOf(T.rangeElementAt)).Fn.return_type) |t| {
                     return t;
                 } else @compileError("rangeElementAt must return a type");
-            } else if (@hasDecl(T, "rangeElementAtRef")) {
-                if (@typeInfo(@typeOf(T.rangeElementAtRef)).Fn.return_type) |t| {
+            } else if (@hasDecl(T, "rangeElementRefAt")) {
+                if (@typeInfo(@typeOf(T.rangeElementRefAt)).Fn.return_type) |t| {
                     return @typeInfo(t).Pointer.child;
-                } else @compileError("rangeElementAtRef must return a type");
+                } else @compileError("rangeElementRefAt must return a type");
             } else @compileError(errorMsg);
         },
         else => @compileError(errorMsg),
@@ -192,7 +197,7 @@ pub fn CounterRange(comptime T: type) type {
                 .limit = limit,
             };
         }
-        // do not implement rangeElementAtRef because we generate these values as we go
+        // do not implement rangeElementRefAt because we generate these values as we go
         pub fn rangeElementAt(self: *@This(), index: usize) T
         {
             const result = self.next + index;
@@ -245,7 +250,7 @@ pub fn testRange(expected: var, r: var) void {
     while (next(&mutableRange)) |actual| {
         //testing.expect(expectedIndex < expected.len);
         if (expectedIndex >= expected.len) {
-            std.debug.warn("range has more than the expected {} element(s)\n", expected.len);
+            std.debug.warn("\nrange has more than the expected {} element(s)\n", expected.len);
             @panic("range has too many elements");
         }
         //std.debug.warn("\nexpected: '{}' (type={})", expected[expectedIndex], @typeName(@typeOf(expected[expectedIndex])));
@@ -284,6 +289,7 @@ pub fn empty(rref: var) bool {
     const T = @typeOf(rref.*);
     const errorMsg = "don't know how to implement 'empty' for type " ++ @typeName(T);
     switch (@typeInfo(T)) {
+        // Array doesn't make sense because you can't modify a pointer to a constant array
         .Pointer => |info| {
             switch (info.size) {
                 .Slice => { return rref.len == 0; },
@@ -304,10 +310,61 @@ test "empty" {
     testing.expect(!empty(&"a"[0..]));
     testing.expect(empty(&sliceRange(""[0..])));
     testing.expect(!empty(&sliceRange("b"[0..])));
-    testing.expect(empty(&zog.sentinel.assumeSentinel("")));
-    testing.expect(!empty(&zog.sentinel.assumeSentinel("abc")));
     testing.expect(empty(&CounterRange(u8).init(0, 0)));
     testing.expect(!empty(&CounterRange(u8).init(0, 1)));
+    // TODO: add some sentinel pointer/slice tests
+    //testing.expect(empty(&zog.sentinel.sentinelPtrRange(("".*)[0..].ptr)));
+    //{
+    //    var ptr : [*:0]const u8 = "";
+    //    testing.expect(empty(&ptr));
+    //}
+
+}
+
+comptime {
+    //@compileLog("hello");
+    //@compileLog(@typeName(@typeOf("abc")));
+    std.debug.assert(*const [3:0]u8 == @typeOf("abc"));
+    std.debug.assert([3:0]u8 == @typeOf("abc".*));
+    //@compileLog("TYPE:");
+    //@compileLog(@typeName(@typeOf("abc".*)));
+    //@compileLog(@typeName(@typeOf("abc".*[0..])));
+    /////!!!@compileLog(@typeName(SentinelArraySlice(@typeOf("abc"))));
+    //@compileLog(@typeName(@typeOf(sentinelArraySlice("abc"))));
+}
+
+pub fn SentinelArraySlice(comptime T: type) type {
+    const errorMsg = "expected pointer to sentinel array but got: " ++ @typeName(T);
+    switch (@typeInfo(T))
+    {
+        .Pointer => |ptrInfo| {
+            if (ptrInfo.size != .One)
+                @compileError(errorMsg);
+            switch (@typeInfo(ptrInfo.child))
+            {
+                .Array => |info| {
+                    return @Type(builtin.TypeInfo { .Pointer = builtin.TypeInfo.Pointer {
+                        .size = builtin.TypeInfo.Pointer.Size.Slice,
+                        .is_const = true,
+                        .is_volatile = false,
+                        // Assertion failed at /deps/zig/src/ir.cpp:22457 in get_const_field. This is a bug in the Zig compiler.
+                        //.alignment = @alignOf(info.child),
+                        .alignment = 0,
+                        .child = info.child,
+                        //.is_allowzero = info.is_allowzero,
+                        .is_allowzero = false,
+                        .sentinel = info.sentinel,
+                    }});
+                },
+                else => @compileError(errorMsg),
+            }
+
+        },
+        else => @compileError(errorMsg),
+    }
+}
+pub fn sentinelArraySlice(x: var) SentinelArraySlice(@typeOf(x)) {
+    return @as(SentinelArraySlice(@typeOf(x)), x.*[0..]);
 }
 
 /// Clone a range.  After calling this, both ranges can be iterated independently and should have the same values.
@@ -406,8 +463,8 @@ pub fn peek(rref: var) RangeElement(@typeOf(rref.*)) {
                 return rref.rangePeek();
             } else if (@hasDecl(T, "rangeElementAt")) {
                 return rref.rangeElementAt(0);
-            } else if (@hasDecl(T, "rangeElementAtRef")) {
-                return rref.rangeElementAtRef(0).*;
+            } else if (@hasDecl(T, "rangeElementRefAt")) {
+                return rref.rangeElementRefAt(0).*;
             } else @compileError(errorMsg);
         },
         else => @compileError(errorMsg),
@@ -431,7 +488,7 @@ test "optionalPeek" {
 pub fn Peekable(comptime T: type) type {
     if (@hasDecl(T, "rangePeek") ||
         @hasDecl(T, "rangeElementAt") ||
-        @hasDecl(T, "rangeElementAtRef")) {
+        @hasDecl(T, "rangeElementRefAt")) {
         return T;
     } else { // assume there is a 'rangeNext' method
         const NextReturnType = @typeInfo(T.rangeNext).Fn.return_type;
@@ -462,7 +519,7 @@ pub fn makePeekable(rref: var) Peekable(@typeOf(rref.*)) {
     const T = @typeOf(rref.*);
     if (@hasDecl(T, "rangePeek") ||
         @hasDecl(T, "rangeElementAt") ||
-        @hasDecl(T, "rangeElementAtRef")) {
+        @hasDecl(T, "rangeElementRefAt")) {
         return rref;
     } else {
         return Peekable(@typeOf(rref)).init(rref);
@@ -712,8 +769,8 @@ pub fn elementAt(rref: var, index: usize) RangeElement(@typeOf(rref.*)) {
         .Struct, .Union => {
             if (@hasDecl(T, "rangeElementAt")) {
                 return rref.rangeElementAt(index);
-            } else if (@hasDecl(T, "rangeElementAtRef")) {
-                return rref.rangeElementAtRef(index).*;
+            } else if (@hasDecl(T, "rangeElementRefAt")) {
+                return rref.rangeElementRefAt(index).*;
             } else @compileError(errorMsg);
         },
         else => @compileError(errorMsg),

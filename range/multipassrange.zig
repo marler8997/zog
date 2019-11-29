@@ -1,12 +1,19 @@
 const std = @import("std");
-const zog = @import("./zog.zig");
+const zog = @import("../zog.zig");
 
 // TODO: this should be somewhere else
 fn max(a: var, b: @typeOf(a)) @typeOf(a) {
     return if (a >= b) a else b;
 }
 
-pub fn Reorder(comptime Range: type) type {
+/// A Range that iterates through an underlying range N times returning a different set
+/// of elements each time.  It takes a function that determins which 'pass' each item belongs
+/// to (i.e. 0 - (N-1)).  This function does not cache the result of this function, so it gets
+/// called for every element on every pass.
+///
+/// This mechanism is differs from sort as it does not require extra memory but does require
+/// iterating over the range multiple times.
+pub fn MultiPassRange(comptime Range: type) type {
     return struct {
         const Element = zog.range.RangeElement(Range);
         const Func = fn(*const Element) u8;
@@ -49,15 +56,15 @@ pub fn Reorder(comptime Range: type) type {
     };
 }
 
-pub fn reorder(rref: var, func: var) Reorder(@typeOf(rref.*)) {
+pub fn multiPassRange(rref: var, func: var) MultiPassRange(@typeOf(rref.*)) {
     const T = @typeOf(rref.*);
-    return Reorder(T).init(rref, func);
+    return MultiPassRange(T).init(rref, func);
 }
 
 fn asciiDigitToBinary(val: *const u8) u8 { return val.* - '0'; }
 
-test "reorder" {
-    zog.range.testRange("000111", reorder(&"010101"[0..], asciiDigitToBinary));
-    zog.range.testRange("000111", reorder(&"110010"[0..], asciiDigitToBinary));
-    zog.range.testRange("000111222", reorder(&"121022010"[0..], asciiDigitToBinary));
+test "MultiPassRange" {
+    zog.range.testRange("000111", multiPassRange(&"010101"[0..], asciiDigitToBinary));
+    zog.range.testRange("000111", multiPassRange(&"110010"[0..], asciiDigitToBinary));
+    zog.range.testRange("000111222", multiPassRange(&"121022010"[0..], asciiDigitToBinary));
 }

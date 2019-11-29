@@ -16,6 +16,7 @@ pub fn Slice(comptime T: type) type {
             .alignment = info.alignment,
             .child = info.child,
             .is_allowzero = info.is_allowzero,
+            .sentinel = info.sentinel,
         }}),
         else => @compileError("Expected pointer or array type, " ++ "found '" ++ @typeName(T) ++ "'"),
     };
@@ -49,6 +50,7 @@ pub fn ManyPointer(comptime T: type) type {
             .alignment = info.alignment,
             .child = info.child,
             .is_allowzero = info.is_allowzero,
+            .sentinel = info.sentinel,
         }}),
         .Struct => |info| {
             if (zog.limitslice.isLimitSlice(T)) {
@@ -82,6 +84,7 @@ pub fn SinglePointer(comptime T: type) type {
             .alignment = info.alignment,
             .child = info.child,
             .is_allowzero = info.is_allowzero,
+            .sentinel = info.sentinel,
         }}),
         //.Struct => |info| {
         //    if (zog.limitslice.isLimitSlice(T)) {

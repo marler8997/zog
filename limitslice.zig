@@ -31,7 +31,7 @@ pub fn LimitSlice(comptime T : type) type {
             return @ptrToInt(self.ptr + index) < @ptrToInt(self.limit);
         }
 
-        pub fn rangeElementAtRef(self: *@This(), index: usize) zog.meta.SinglePointer(T) {
+        pub fn rangeElementRefAt(self: *@This(), index: usize) zog.meta.SinglePointer(T) {
             const ptr = self.ptr + index;
             std.debug.assert(@ptrToInt(ptr) < @ptrToInt(self.limit));
             return &ptr[0];
