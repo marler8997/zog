@@ -29,5 +29,5 @@ pub fn indexOfAny(comptime T: type, slice: []const T, values: []const T) ?usize 
 }
 
 pub fn copy(dest: var, source: var) void {
-    std.mem.copy(@typeOf(dest[0]), dest, source);
+    std.mem.copy(@TypeOf(dest[0]), dest, source);
 }

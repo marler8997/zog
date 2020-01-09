@@ -33,9 +33,9 @@ pub fn SentinelPtrRange(comptime T: type) type {
 }
 
 // A range that uses a single pointer and a sentinel value
-pub fn sentinelPtrRange(ptr: var) SentinelPtrRange(@typeOf(ptr)) {
-    //@compileLog(@typeName(@typeOf(ptr)));
-    return SentinelPtrRange(@typeOf(ptr)) { .ptr = ptr };
+pub fn sentinelPtrRange(ptr: var) SentinelPtrRange(@TypeOf(ptr)) {
+    //@compileLog(@typeName(@TypeOf(ptr)));
+    return SentinelPtrRange(@TypeOf(ptr)) { .ptr = ptr };
 }
 
 //
@@ -111,11 +111,11 @@ pub fn PointerWithSentinel(comptime T: type, comptime sentinelValue: var) type {
 
 // TODO: probably accept slices, array pointers and limit arrays?
 //       for now I'll just support slices
-pub fn reduceSentinel(x: var) PointerWithSentinel(@typeOf(x), defaultSentinel(@typeOf(x))) {
-    return reduceSentinelCustom(x, 0);//defaultSentinel(@typeOf(x)));
+pub fn reduceSentinel(x: var) PointerWithSentinel(@TypeOf(x), defaultSentinel(@TypeOf(x))) {
+    return reduceSentinelCustom(x, 0);//defaultSentinel(@TypeOf(x)));
 }
-pub fn reduceSentinelCustom(x: var, comptime sentinelValue: var) PointerWithSentinel(@typeOf(x), sentinelValue) {
-    const T = @typeOf(x);
+pub fn reduceSentinelCustom(x: var, comptime sentinelValue: var) PointerWithSentinel(@TypeOf(x), sentinelValue) {
+    const T = @TypeOf(x);
     const errorMsg = "expected a slice type but got: " ++ @typeName(T);
     switch (@typeInfo(T))
     {
@@ -152,8 +152,8 @@ pub fn reduceSentinelCustom(x: var, comptime sentinelValue: var) PointerWithSent
 //    }
 //}
 // For now, only accept many pointers and slices
-//pub fn assumeSentinel(x: var) AssumeSentinel(@typeOf(x)) {
-//    const T = @typeOf(x);
+//pub fn assumeSentinel(x: var) AssumeSentinel(@TypeOf(x)) {
+//    const T = @TypeOf(x);
 //    const errorMsg = "assumeSentinel does not support type: " ++ @typeName(T);
 //    // TODO:Return Either SentinelPtr or SentinelSlice
 //    switch (@typeInfo(T)) {

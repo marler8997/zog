@@ -88,10 +88,10 @@ pub fn isLimitSlice(comptime T: type) bool {
     }
 }
 
-pub inline fn limitSlice(x: var) LimitSlice(zog.meta.ManyPointer(@typeOf(x))) {
-    if (zog.meta.Slice(@typeOf(x)) != @typeOf(x))
-        @compileError("pointerRange requires a slice but got " ++ @typeName(@typeOf(x)));
-    return LimitSlice(zog.meta.ManyPointer(@typeOf(x))) {
+pub inline fn limitSlice(x: var) LimitSlice(zog.meta.ManyPointer(@TypeOf(x))) {
+    if (zog.meta.Slice(@TypeOf(x)) != @TypeOf(x))
+        @compileError("pointerRange requires a slice but got " ++ @typeName(@TypeOf(x)));
+    return LimitSlice(zog.meta.ManyPointer(@TypeOf(x))) {
         .ptr = x.ptr,
         .limit = x.ptr + x.len,
     };
@@ -106,6 +106,6 @@ pub fn ptrLessThan(left: var, right: var) bool {
     return @ptrToInt(left) < @ptrToInt(right);
 }
 
-pub fn limitPointersToSlice(ptr: var, limit: var) stdext.meta.SliceType(@typeOf(ptr)) {
-    return ptr[0 .. (@ptrToInt(limit) - @ptrToInt(ptr)) / @sizeOf(@typeOf(ptr).Child)];
+pub fn limitPointersToSlice(ptr: var, limit: var) stdext.meta.SliceType(@TypeOf(ptr)) {
+    return ptr[0 .. (@ptrToInt(limit) - @ptrToInt(ptr)) / @sizeOf(@TypeOf(ptr).Child)];
 }

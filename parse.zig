@@ -53,22 +53,22 @@ pub fn StrtokResult(comptime S: type, comptime DelimRange: type) type {
     //    else => @compileError("Expected slice/pointer but got '" ++ @typeName(S) ++ "'"),
     //}
 }
-pub fn strtok(s: var, delims: var) StrtokResult(@typeOf(s), @typeOf(delims)) {
-    return Strtok(@typeOf(s), @typeOf(delims)).init(s, delims);
-    //switch (@typeInfo(@typeOf(s))) {
+pub fn strtok(s: var, delims: var) StrtokResult(@TypeOf(s), @TypeOf(delims)) {
+    return Strtok(@TypeOf(s), @TypeOf(delims)).init(s, delims);
+    //switch (@typeInfo(@TypeOf(s))) {
     //    .Pointer => |info| {
     //        switch (info.Size) {
     //            .One => @compileError("not impl"),
     //            .Many => @compileError("not impl"),
     //            .Slice => @compileError("not impl"),
     //            .C => @compileError("not impl"),
-    //            //return Strtok(@typeOf(s), null, @typeOf(delims)) {
+    //            //return Strtok(@TypeOf(s), null, @TypeOf(delims)) {
     //            //    .s = s,
     //            //    .delims = delims,
     //            //};
     //        }
     //    },
-    //    else => @compileError("Expected slice/pointer but got '" ++ @typeName(@typeOf(s)) ++ "'"),
+    //    else => @compileError("Expected slice/pointer but got '" ++ @typeName(@TypeOf(s)) ++ "'"),
     //}
 }
 

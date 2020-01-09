@@ -4,11 +4,12 @@
 const std = @import("std");
 
 const zog = @import("./zog.zig");
-const varargs = zog.varargs;
+const tuple = zog.tuple;
 const appendlib = zog.appendlib;
 const runutil = zog.runutil;
 
-pub fn log(comptime fmt: []const u8, args: ...) void {
+pub fn log(comptime fmt: []const u8, args: var) void {
+    tuple.enforceIsTuple(@TypeOf(args));
     std.debug.warn(fmt ++ "\n", args);
 }
 
@@ -25,11 +26,11 @@ fn logRun(allocator: *std.mem.Allocator, argv: []const []const u8) !void {
     var appender = appendlib.FixedAppender(u8).init(buffer);
     runutil.appendCommandString(&appender.appender, argv);
     std.debug.assert(appender.full());
-    log("[RUN] {}", buffer);
+    log("[RUN] {}", .{buffer});
 }
 
-pub fn runGetOutput(allocator: *std.mem.Allocator, args: ...) !std.ChildProcess.ExecResult {
-    var argv = try varargs.allocVarargs([]const u8, allocator, args);
+pub fn runGetOutput(allocator: *std.mem.Allocator, args: var) !std.ChildProcess.ExecResult {
+    var argv = try tuple.alloc([]const u8, allocator, args);
     defer allocator.free(argv);
     return runGetOutputArray(allocator, argv);
 }
@@ -37,13 +38,13 @@ pub fn runGetOutput(allocator: *std.mem.Allocator, args: ...) !std.ChildProcess.
 pub fn runGetOutputArray(allocator: *std.mem.Allocator, argv: []const []const u8) !std.ChildProcess.ExecResult {
     try logRun(allocator, argv);
     return std.ChildProcess.exec(allocator, argv, null, null, std.math.maxInt(usize)) catch |err| {
-        log("Error: failed to execute '{}': {}", argv[0], err);
+        log("Error: failed to execute '{}': {}", .{argv[0], err});
         return ErrorReported;
     };
 }
 
-pub fn run(allocator: *std.mem.Allocator, args: ...) !std.ChildProcess.Term {
-    var argv = try varargs.allocVarargs([]const u8, allocator, args);
+pub fn run(allocator: *std.mem.Allocator, args: var) !std.ChildProcess.Term {
+    var argv = try tuple.alloc([]const u8, allocator, args);
     defer allocator.free(argv);
     return runArray(allocator, argv);
 }
@@ -58,11 +59,11 @@ pub fn dumpExecResult(result: std.ChildProcess.ExecResult) bool {
     var hasOutput = false;
     if (result.stdout.len > 0) {
         hasOutput = true;
-        log("{}", result.stdout);
+        log("{}", .{result.stdout});
     }
     if (result.stderr.len > 0) {
         hasOutput = true;
-        log("{}", result.stderr);
+        log("{}", .{result.stderr});
     }
     return hasOutput;
 }
@@ -72,14 +73,14 @@ pub fn enforceRunGetOutputPassed(allocator: *std.mem.Allocator, result: std.Chil
         .Exited => {
             if (result.term.Exited != 0) {
                 if (!dumpExecResult(result)) {
-                    log("Error: last process exited with code {}", result.term.Exited);
+                    log("Error: last process exited with code {}", .{result.term.Exited});
                 }
                 return ErrorReported;
             }
         },
         else => {
             if (!dumpExecResult(result)) {
-                log("Error: last process failed with {}", result.term);
+                log("Error: last process failed with {}", .{result.term});
             }
             return ErrorReported;
         },
@@ -91,12 +92,12 @@ pub fn enforceRunPassed(term: std.ChildProcess.Term) !void {
     switch (term) {
         .Exited => {
             if (term.Exited != 0) {
-                log("Error: last process exited with code {}", term.Exited);
+                log("Error: last process exited with code {}", .{term.Exited});
                 return ErrorReported;
             }
         },
         else => {
-            log("Error: last process failed with {}", term);
+            log("Error: last process failed with {}", .{term});
             return ErrorReported;
         },
     }

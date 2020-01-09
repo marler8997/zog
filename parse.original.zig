@@ -26,12 +26,12 @@ pub fn Strtok(comptime Pointer: type) type {
     };
 }
 
-pub fn strtok(str: var, delims: []const u8) Strtok(ArrayPointerType(@typeOf(str))) {
-    switch (@typeInfo(@typeOf(str))) {
+pub fn strtok(str: var, delims: []const u8) Strtok(ArrayPointerType(@TypeOf(str))) {
+    switch (@typeInfo(@TypeOf(str))) {
         .Pointer => |info| {
 
         },
-        else => @compileError("Expected slice/pointer but got '" ++ @typeName(@typeOf(str)) ++ "'"),
+        else => @compileError("Expected slice/pointer but got '" ++ @typeName(@TypeOf(str)) ++ "'"),
     }
 
      

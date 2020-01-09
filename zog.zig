@@ -7,7 +7,7 @@ pub const mem = @import("./mem.zig");
 pub const stringpool = @import("./stringpool.zig");
 
 // Stuff taken from git-extra
-pub const varargs = @import("./varargs.zig");
+pub const tuple = @import("./tuple.zig");
 pub const appendlib = @import("./appendlib.zig");
 pub const runutil = @import("./runutil.zig");
 pub const cmdlinetool = @import("./cmdlinetool.zig");
