@@ -14,11 +14,11 @@ pub fn getCommandStringLength(argv: []const []const u8) usize {
 }
 
 pub fn appendCommandString(appender: *appendlib.Appender(u8), argv: []const []const u8) void {
-    var prefix = ""[0..];
+    var prefix : []const u8 = "";
     for (argv) |arg| {
         appender.appendSlice(prefix);
         appender.appendSlice(arg);
-        prefix = " "[0..];
+        prefix = " ";
     }
 }
 
