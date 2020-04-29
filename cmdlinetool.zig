@@ -37,7 +37,14 @@ pub fn runGetOutput(allocator: *std.mem.Allocator, args: var) !std.ChildProcess.
 
 pub fn runGetOutputArray(allocator: *std.mem.Allocator, argv: []const []const u8) !std.ChildProcess.ExecResult {
     try logRun(allocator, argv);
-    return std.ChildProcess.exec(allocator, argv, null, null, std.math.maxInt(usize)) catch |err| {
+    return std.ChildProcess.exec(.{
+        .allocator = allocator,
+        .argv = argv,
+        .cwd = null,
+        .env_map = null,
+        .max_output_bytes = std.math.maxInt(usize),
+        .expand_arg0 = .no_expand,
+    }) catch |err|{
         log("Error: failed to execute '{}': {}", .{argv[0], err});
         return ErrorReported;
     };
