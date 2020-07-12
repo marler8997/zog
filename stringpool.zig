@@ -31,7 +31,7 @@ pub const StringPool = struct {
 
 test "stringpool"
 {
-    var pool = StringPool.init(std.heap.direct_allocator);
+    var pool = StringPool.init(std.testing.allocator);
     const s = try pool.add("hello");
     {
         var buf : [5]u8 = undefined;

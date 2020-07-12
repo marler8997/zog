@@ -38,38 +38,53 @@ test "std.meta.Slice" {
     testing.expect(Slice([*]volatile u8) == []volatile u8);
 }
 
-/// Given an array/pointer type, return the "many pointer" type `[*]Child`.
+/// Converts slices or pointers to arrays to the [*]T "ManyPointer" equivalent.
+/// For example: []u8 becomes [*]u8 and *[N]u8 becomes [*]u8
 /// Preserves all pointer attributes such as `const`/`volatile` etc.
 pub fn ManyPointer(comptime T: type) type {
+    const errorMsg = "ManyPointer does not support type: " ++ @typeName(T);
     switch (@typeInfo(T)) {
-        .Array => |info| return [*]const info.child,
-        .Pointer => |info| return @Type(builtin.TypeInfo { .Pointer = builtin.TypeInfo.Pointer {
-            .size = builtin.TypeInfo.Pointer.Size.Many,
-            .is_const = info.is_const,
-            .is_volatile = info.is_volatile,
-            .alignment = info.alignment,
-            .child = info.child,
-            .is_allowzero = info.is_allowzero,
-            .sentinel = info.sentinel,
-        }}),
-        .Struct => |info| {
-            if (zog.limitslice.isLimitSlice(T)) {
-                return T.ManyPointer();
-            }
+        .Pointer => |info| switch (info.size) {
+            .One => switch (@typeInfo(info.child)) {
+                .Array => |array_info| return @Type(builtin.TypeInfo { .Pointer = builtin.TypeInfo.Pointer {
+                    .size = builtin.TypeInfo.Pointer.Size.Many,
+                    .is_const = true,
+                    .is_volatile = false,
+                    .alignment = @alignOf(array_info.child),
+                    .child = array_info.child,
+                    .is_allowzero = false,
+                    .sentinel = array_info.sentinel,
+                }}),
+                else => @compileError(errorMsg),
+            },
+            .Many => return T,
+            .Slice, .C => return @Type(builtin.TypeInfo { .Pointer = builtin.TypeInfo.Pointer {
+                .size = builtin.TypeInfo.Pointer.Size.Many,
+                .is_const = info.is_const,
+                .is_volatile = info.is_volatile,
+                .alignment = info.alignment,
+                .child = info.child,
+                .is_allowzero = info.is_allowzero,
+                .sentinel = info.sentinel,
+            }}),
         },
-        else => {},
+//        .Struct => |info| {
+//            // TODO: support a @hasDecl(T, "ManyPointer") interface?
+//            if (zog.limitslice.isLimitSlice(T)) {
+//                return T.ManyPointer();
+//            }
+//        },
+        else => @compileError(errorMsg),
     }
-    @compileError("Expected pointer/array type, " ++ "found '" ++ @typeName(T) ++ "'");
 }
 
 test "std.meta.ManyPointer" {
     testing.expect(ManyPointer([]u8) == [*]u8);
     testing.expect(ManyPointer([]const u8) == [*]const u8);
-    testing.expect(ManyPointer(*u8) == [*]u8);
-    testing.expect(ManyPointer(*const u8) == [*]const u8);
     testing.expect(ManyPointer([*]u8) == [*]u8);
     testing.expect(ManyPointer([*]const u8) == [*]const u8);
-    //testing.expect(ManyPointer([10]u8) == [*]const u8);
+    testing.expect(ManyPointer(*[10]u8) == [*]const u8);
+    testing.expect(ManyPointer(*const [10]u8) == [*]const u8);
 }
 
 /// Given an array/pointer type, return the "single pointer" type `*Child`.
@@ -84,7 +99,7 @@ pub fn SinglePointer(comptime T: type) type {
             .alignment = info.alignment,
             .child = info.child,
             .is_allowzero = info.is_allowzero,
-            .sentinel = info.sentinel,
+            .sentinel = null,
         }}),
         //.Struct => |info| {
         //    if (zog.limitslice.isLimitSlice(T)) {

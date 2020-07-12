@@ -75,36 +75,59 @@ pub fn defaultSentinelElement(comptime T: type) T {
         return @intCast(T, 0);
     } else @compileError("defaultSentinel not implemented for type: " ++ @typeName(T));
 }
-pub fn defaultSentinel(comptime T: type) std.meta.Child(T) {
-    return defaultSentinelElement(std.meta.Child(T));
+pub fn defaultSentinel(comptime T: type) std.meta.Child(GetSliceType(T)) {
+    return defaultSentinelElement(std.meta.Child(GetSliceType(T)));
+}
+
+fn GetSliceType(comptime T: type) type {
+    const errorMsg = "GetSliceType requires some kind of pointer type but got: " ++ @typeName(T);
+    switch (@typeInfo(T)) {
+        .Pointer => |info| {
+            switch (info.size) {
+                .Slice => return type,
+                .One => switch (@typeInfo(info.child)) {
+                    .Array => return @Type(builtin.TypeInfo { .Pointer = .{
+                        .size = .Slice,
+                        .is_const = true,
+                        .is_volatile = false,
+                        .alignment = @alignOf(info.child), // is this right?
+                        .child = info.child,
+                        .is_allowzero = false,
+                        .sentinel = info.sentinel,
+                    }}),
+                    else => @compileError(errorMsg),
+                },
+                else => @compileError(errorMsg),
+            }
+        },
+        else => @compileError(errorMsg),
+    }
 }
 
 
 /// Takes a pointer and returns the same type but with a sentinel value
 /// TODO: support more than just slices
 pub fn PointerWithSentinel(comptime T: type, comptime sentinelValue: var) type {
-    const errorMsg = "expected a slice type but got: " ++ @typeName(T);
-    switch (@typeInfo(T))
+    const errorMsg = "expected some kind of slice type but got: " ++ @typeName(T);
+    switch (@typeInfo(GetSliceType(T)))
     {
-        .Pointer => |info| {
-            switch (info.size) {
-                .Slice => {
-                    if (info.sentinel) |_| {
-                        @compileError("slice already has a sentinel" ++ @typeName(T));
-                    }
-                    return @Type(builtin.TypeInfo { .Pointer = builtin.TypeInfo.Pointer {
-                        .size = .Slice,
-                        .is_const = info.is_const,
-                            .is_volatile = info.is_volatile,
-                        .alignment = info.alignment,
-                        .child = info.child,
-                        .is_allowzero = info.is_allowzero,
-                        .sentinel = sentinelValue
-                    }});
-                },
-                else => @compileError(errorMsg),
-            }
-        },
+        .Pointer => |info| { switch (info.siz) {
+            .Slice => {
+                if (info.sentinel) |_| {
+                    @compileError("slice already has a sentinel" ++ @typeName(T));
+                }
+                return @Type(builtin.TypeInfo { .Pointer = builtin.TypeInfo.Pointer {
+                    .size = .Slice,
+                    .is_const = info.is_const,
+                    .is_volatile = info.is_volatile,
+                    .alignment = info.alignment,
+                    .child = info.child,
+                    .is_allowzero = info.is_allowzero,
+                    .sentinel = sentinelValue
+                }});
+            },
+            else => @compileError(errorMsg),
+        }},
         else => @compileError(errorMsg),
     }
 }
@@ -174,7 +197,7 @@ test "SentinelSlice" {
     // TODO: verify this is a compile error
     //_ = SentinelPtr(u8);
 
-    zog.range.testRange("abc", reduceSentinel("abc\x00"[0..]));
+    //zog.range.testRange("abc", reduceSentinel("abc\x00"));
 
     // TODO: make this work
     //zog.range.testRange("", assumeSentinel(""));
