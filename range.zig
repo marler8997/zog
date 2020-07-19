@@ -222,7 +222,7 @@ pub fn CounterRange(comptime T: type) type {
     };
 }
 
-pub fn counterRange(start: var, limit: var) CounterRange(@TypeOf(start)) {
+pub fn counterRange(start: anytype, limit: anytype) CounterRange(@TypeOf(start)) {
     return CounterRange(@TypeOf(start)).init(start, limit);
 }
 
@@ -243,7 +243,7 @@ pub const FileRange = struct {
 };
 
 // `expected` is an array of the expected items that will be enumerated by `r`
-pub fn testRange(expected: var, r: var) void {
+pub fn testRange(expected: anytype, r: anytype) void {
     var expectedIndex : usize = 0;
     var mutableRange = r;
     //@compileLog("@typeName(@TypeOf(mutableRange)) = ", @typeName(@TypeOf(mutableRange)));
@@ -285,7 +285,7 @@ pub fn dumpType(comptime T: type) void {
     }
 }
 
-pub fn empty(rref: var) bool {
+pub fn empty(rref: anytype) bool {
     const T = @TypeOf(rref.*);
     const errorMsg = "don't know how to implement 'empty' for type " ++ @typeName(T);
     switch (@typeInfo(T)) {
@@ -363,12 +363,12 @@ pub fn SentinelArraySlice(comptime T: type) type {
         else => @compileError(errorMsg),
     }
 }
-pub fn sentinelArraySlice(x: var) SentinelArraySlice(@TypeOf(x)) {
+pub fn sentinelArraySlice(x: anytype) SentinelArraySlice(@TypeOf(x)) {
     return @as(SentinelArraySlice(@TypeOf(x)), x.*[0..]);
 }
 
 /// Clone a range.  After calling this, both ranges can be iterated independently and should have the same values.
-pub fn clone(rref: var) @TypeOf(rref.*) {
+pub fn clone(rref: anytype) @TypeOf(rref.*) {
     const T = @TypeOf(rref.*);
     const errorMsg = "don't know how to implement 'clone' for type " ++ @typeName(T);
     switch (@typeInfo(T)) {
@@ -396,7 +396,7 @@ test "clone" {
     testRange("\x00\x01"[0..], clone(&CounterRange(u8).init(0, 2)));
 }
 
-pub fn pop(rref: var) void {
+pub fn pop(rref: anytype) void {
     const T = @TypeOf(rref.*);
     const errorMsg = "don't know how to pop on type: " ++ @typeName(T);
     switch (@typeInfo(T)) {
@@ -429,7 +429,7 @@ test "pop" {
     pop(&CounterRange(u8).init(0, 1));
 }
 
-pub fn popMany(rref: var, count: usize) void {
+pub fn popMany(rref: anytype, count: usize) void {
     const T = @TypeOf(rref.*);
     const errorMsg = "don't know how to implement 'popMany' for type " ++ @typeName(T);
     switch (@typeInfo(T)) {
@@ -448,7 +448,7 @@ pub fn popMany(rref: var, count: usize) void {
     }
 }
 
-pub fn peek(rref: var) RangeElement(@TypeOf(rref.*)) {
+pub fn peek(rref: anytype) RangeElement(@TypeOf(rref.*)) {
     const T = @TypeOf(rref.*);
     const errorMsg = "don't know how to peek on type: " ++ @typeName(T);
     switch (@typeInfo(T)) {
@@ -472,7 +472,7 @@ pub fn peek(rref: var) RangeElement(@TypeOf(rref.*)) {
 }
 
 /// A convenience function.
-pub fn optionalPeek(rref: var) ?RangeElement(@TypeOf(rref.*)) {
+pub fn optionalPeek(rref: anytype) ?RangeElement(@TypeOf(rref.*)) {
     return if (empty(rref)) null else peek(rref);
 }
 
@@ -515,7 +515,7 @@ pub fn Peekable(comptime T: type) type {
     }
 
 }
-pub fn makePeekable(rref: var) Peekable(@TypeOf(rref.*)) {
+pub fn makePeekable(rref: anytype) Peekable(@TypeOf(rref.*)) {
     const T = @TypeOf(rref.*);
     if (@hasDecl(T, "rangePeek") ||
         @hasDecl(T, "rangeElementAt") ||
@@ -526,7 +526,7 @@ pub fn makePeekable(rref: var) Peekable(@TypeOf(rref.*)) {
     }
 }
 
-pub fn next(rref: var) ?RangeElement(@TypeOf(rref.*)) {
+pub fn next(rref: anytype) ?RangeElement(@TypeOf(rref.*)) {
     const T = @TypeOf(rref.*);
     switch (@typeInfo(T)) {
         .Struct, .Union => {
@@ -548,7 +548,7 @@ pub fn next(rref: var) ?RangeElement(@TypeOf(rref.*)) {
     }
 }
 
-pub fn length(rref: var) usize {
+pub fn length(rref: anytype) usize {
     const T = @TypeOf(rref.*);
     if (@hasField(T, "len")) {
         return rref.len;
@@ -564,7 +564,7 @@ pub fn length(rref: var) usize {
 //        else => @compileError("not implemented"),
 //    }
 //}
-//pub inline fn range(x: var) RangeType(@TypeOf(x)) {
+//pub inline fn range(x: anytype) RangeType(@TypeOf(x)) {
 //    switch (@typeInfo(@TypeOf(x))) {
 //        .Array => |info| @compileError("cannot create a range from a static array passed-by-value: " ++ @typeName(@TypeOf(x))),
 //        .Pointer => |info| switch (info.size) {
@@ -585,7 +585,7 @@ pub fn length(rref: var) usize {
 
 /// pop elements until the given element is found
 /// returns true if found, false otherwise
-pub fn popFind(rref: var, element: var) bool {
+pub fn popFind(rref: anytype, element: anytype) bool {
     while (next(rref)) |e| {
         if (zog.compare.deepEquals(e, element))
             return true;
@@ -595,7 +595,7 @@ pub fn popFind(rref: var, element: var) bool {
 
 /// A convenience function around popFind.  It makes a clone of the range
 /// when calling popFind so the original range position is maintained.
-pub fn contains(rref: var, value: var) bool {
+pub fn contains(rref: anytype, value: anytype) bool {
     var rangeClone = clone(rref);
     return popFind(&rangeClone, value);
 }
@@ -618,7 +618,7 @@ test "contains" {
 
 /// pop elements out of range until any of the given elements is found
 /// returns true if found, false otherwise
-pub fn popFindAny(rref: var, any: var) bool {
+pub fn popFindAny(rref: anytype, any: anytype) bool {
     while (next(rref)) |e| {
         // need to clone so that we can start from the beginning
         // of any on the next iteration
@@ -631,7 +631,7 @@ pub fn popFindAny(rref: var, any: var) bool {
     return false;
 }
 
-pub fn indexOfAny(rref: var, any: var) ?usize {
+pub fn indexOfAny(rref: anytype, any: anytype) ?usize {
     var i: usize = 0;
     while (indexInRange(rref, i)) : (i += 1) {
         if (contains(any, elementAt(rref, i)))
@@ -654,7 +654,7 @@ test "indexOfAny" {
 
 // TODO: if the type does not support sliceableOffsetLimit but does support
 //       rangePopMany and shrinkMany then we can use those
-pub fn sliceableOffsetLimit(rref: var, offset: usize, limit: usize) @TypeOf(rref.*) {
+pub fn sliceableOffsetLimit(rref: anytype, offset: usize, limit: usize) @TypeOf(rref.*) {
     const T = @TypeOf(rref.*);
     const errorMsg = "don't know how to implement sliceableOffsetLimit for type " ++ @typeName(T);
     switch (@typeInfo(T)) {
@@ -684,19 +684,19 @@ test "sliceableOffsetLimit" {
 }
 
 // Just a convenience function
-pub fn sliceableOffsetOnly(rref: var, offset: usize) @TypeOf(rref.*) {
+pub fn sliceableOffsetOnly(rref: anytype, offset: usize) @TypeOf(rref.*) {
     var rangeCopy = clone(rref);
     popMany(&rangeCopy, offset);
     return rangeCopy;
 }
-pub fn sliceableLimitLength(rref: var, limitLength: usize) @TypeOf(rref.*) {
+pub fn sliceableLimitLength(rref: anytype, limitLength: usize) @TypeOf(rref.*) {
     const T = @TypeOf(rref.*);
     if (@hasDecl(T, "sliceableLimitLength")) {
         return rref.sliceableLimitLength(limitLength);
     } else return sliceableOffsetLimit(rref, 0, limitLength);
 }
 
-pub fn asSlice(rref: var) []RangeElement(@TypeOf(rref.*)) {
+pub fn asSlice(rref: anytype) []RangeElement(@TypeOf(rref.*)) {
     const T = @TypeOf(rref.*);
     if (@hasDecl(T, "asSlice")) {
         return rref.asSlice();
@@ -712,7 +712,7 @@ pub fn AsArrayPointerResult(comptime T: type) type {
     } else @compileError("don't know how to make " ++ @typeName(T) ++ " into an array pointer");
 }
 // Return a pointer to an array of elements for the range
-pub fn asArrayPointer(rref: var) AsArrayPointerResult(@TypeOf(rref.*)) {
+pub fn asArrayPointer(rref: anytype) AsArrayPointerResult(@TypeOf(rref.*)) {
     const T = @TypeOf(rref.*);
     if (@hasDecl(T, "asArrayPointer")) {
         return rref.asArrayPointer();
@@ -727,7 +727,7 @@ pub fn SliceableSlice(comptime Sliceable: type) type {
 }
 
 
-pub fn indexInRange(rref: var, index: usize) bool {
+pub fn indexInRange(rref: anytype, index: usize) bool {
     const T = @TypeOf(rref.*);
     const errorMsg = "don't know how to implement indexInRange for type " ++ @typeName(T);
     switch (@typeInfo(T)) {
@@ -756,7 +756,7 @@ test "indexInRange" {
 /// Can assert if index is out-of-range, but does not return an error.
 /// If the caller wants to check whether the index is out of range then they
 /// can call another function to check this.
-pub fn elementAt(rref: var, index: usize) RangeElement(@TypeOf(rref.*)) {
+pub fn elementAt(rref: anytype, index: usize) RangeElement(@TypeOf(rref.*)) {
     const T = @TypeOf(rref.*);
     const errorMsg = "don't know how to implement 'elementAt' for type " ++ @typeName(T);
     switch (@typeInfo(T)) {
@@ -786,7 +786,7 @@ test "elementAt" {
 }
 
 // Takes a slice as the 2nd parameter because we're definitely going to need the length
-pub fn startsWith(rref: var, slice: []const RangeElement(@TypeOf(rref.*))) bool {
+pub fn startsWith(rref: anytype, slice: []const RangeElement(@TypeOf(rref.*))) bool {
     return indexInRange(rref, slice.len) and
         zog.mem.ptrEqual(asArrayPointer(rref), slice.ptr, slice.len);
 }
@@ -798,7 +798,7 @@ test "startsWith" {
     }
 }
 
-pub fn popIfMatch(rref: var, slice: var) bool {
+pub fn popIfMatch(rref: anytype, slice: anytype) bool {
     if (startsWith(rref, slice)) {
         popMany(rref, slice.len);
         return true;

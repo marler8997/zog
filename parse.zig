@@ -53,7 +53,7 @@ pub fn StrtokResult(comptime S: type, comptime DelimRange: type) type {
     //    else => @compileError("Expected slice/pointer but got '" ++ @typeName(S) ++ "'"),
     //}
 }
-pub fn strtok(s: var, delims: var) StrtokResult(@TypeOf(s), @TypeOf(delims)) {
+pub fn strtok(s: anytype, delims: anytype) StrtokResult(@TypeOf(s), @TypeOf(delims)) {
     return Strtok(@TypeOf(s), @TypeOf(delims)).init(s, delims);
     //switch (@typeInfo(@TypeOf(s))) {
     //    .Pointer => |info| {

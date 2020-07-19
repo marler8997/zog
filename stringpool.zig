@@ -20,7 +20,7 @@ pub const StringPool = struct {
     /// the new copy.
     pub fn add(self: *@This(), s: []const u8) ![]const u8 {
         if (self.map.get(s)) |entry| {
-            return entry.value;
+            return entry;
         }
         var newString = try self.allocator.alloc(u8, s.len);
         std.mem.copy(u8, newString, s);

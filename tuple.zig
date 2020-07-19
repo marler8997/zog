@@ -6,13 +6,13 @@ pub fn enforceIsTuple(comptime T: type) void {
     }
 }
 
-pub fn copy(array: var, tuple: var) void {
+pub fn copy(array: anytype, tuple: anytype) void {
     enforceIsTuple(@TypeOf(tuple));
     comptime var i = 0;
     inline while (i < tuple.len) : (i += 1) array[i] = tuple[i];
 }
 
-pub fn alloc(comptime T: type, allocator: *std.mem.Allocator, tuple: var) ![]T {
+pub fn alloc(comptime T: type, allocator: *std.mem.Allocator, tuple: anytype) ![]T {
     enforceIsTuple(@TypeOf(tuple));
     var array = try allocator.alloc(T, tuple.len);
     copy(array, tuple);

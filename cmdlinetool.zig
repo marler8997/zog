@@ -8,7 +8,7 @@ const tuple = zog.tuple;
 const appendlib = zog.appendlib;
 const runutil = zog.runutil;
 
-pub fn log(comptime fmt: []const u8, args: var) void {
+pub fn log(comptime fmt: []const u8, args: anytype) void {
     tuple.enforceIsTuple(@TypeOf(args));
     std.debug.warn(fmt ++ "\n", args);
 }
@@ -29,7 +29,7 @@ fn logRun(allocator: *std.mem.Allocator, argv: []const []const u8) !void {
     log("[RUN] {}", .{buffer});
 }
 
-pub fn runGetOutput(allocator: *std.mem.Allocator, args: var) !std.ChildProcess.ExecResult {
+pub fn runGetOutput(allocator: *std.mem.Allocator, args: anytype) !std.ChildProcess.ExecResult {
     var argv = try tuple.alloc([]const u8, allocator, args);
     defer allocator.free(argv);
     return runGetOutputArray(allocator, argv);
@@ -50,7 +50,7 @@ pub fn runGetOutputArray(allocator: *std.mem.Allocator, argv: []const []const u8
     };
 }
 
-pub fn run(allocator: *std.mem.Allocator, args: var) !std.ChildProcess.Term {
+pub fn run(allocator: *std.mem.Allocator, args: anytype) !std.ChildProcess.Term {
     var argv = try tuple.alloc([]const u8, allocator, args);
     defer allocator.free(argv);
     return runArray(allocator, argv);

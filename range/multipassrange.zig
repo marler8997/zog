@@ -2,7 +2,7 @@ const std = @import("std");
 const zog = @import("../zog.zig");
 
 // TODO: this should be somewhere else
-fn max(a: var, b: @TypeOf(a)) @TypeOf(a) {
+fn max(a: anytype, b: @TypeOf(a)) @TypeOf(a) {
     return if (a >= b) a else b;
 }
 
@@ -56,7 +56,7 @@ pub fn MultiPassRange(comptime Range: type) type {
     };
 }
 
-pub fn multiPassRange(rref: var, func: var) MultiPassRange(@TypeOf(rref.*)) {
+pub fn multiPassRange(rref: anytype, func: anytype) MultiPassRange(@TypeOf(rref.*)) {
     const T = @TypeOf(rref.*);
     return MultiPassRange(T).init(rref, func);
 }

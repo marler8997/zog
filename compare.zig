@@ -4,7 +4,7 @@ const zog = @import("./zog.zig");
 
 ///Compares two of any type for equality. Containers are compared on a field-by-field basis,
 /// where possible. Pointers are also followed.
-pub fn deepEquals(a: var, b: @TypeOf(a)) bool {
+pub fn deepEquals(a: anytype, b: @TypeOf(a)) bool {
     switch (@typeInfo(@TypeOf(a))) {
         builtin.TypeId.Pointer => |info| {
             switch (info.size) {

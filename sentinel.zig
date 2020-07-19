@@ -33,7 +33,7 @@ pub fn SentinelPtrRange(comptime T: type) type {
 }
 
 // A range that uses a single pointer and a sentinel value
-pub fn sentinelPtrRange(ptr: var) SentinelPtrRange(@TypeOf(ptr)) {
+pub fn sentinelPtrRange(ptr: anytype) SentinelPtrRange(@TypeOf(ptr)) {
     //@compileLog(@typeName(@TypeOf(ptr)));
     return SentinelPtrRange(@TypeOf(ptr)) { .ptr = ptr };
 }
@@ -107,7 +107,7 @@ fn GetSliceType(comptime T: type) type {
 
 /// Takes a pointer and returns the same type but with a sentinel value
 /// TODO: support more than just slices
-pub fn PointerWithSentinel(comptime T: type, comptime sentinelValue: var) type {
+pub fn PointerWithSentinel(comptime T: type, comptime sentinelValue: anytype) type {
     const errorMsg = "expected some kind of slice type but got: " ++ @typeName(T);
     switch (@typeInfo(GetSliceType(T)))
     {
@@ -134,10 +134,10 @@ pub fn PointerWithSentinel(comptime T: type, comptime sentinelValue: var) type {
 
 // TODO: probably accept slices, array pointers and limit arrays?
 //       for now I'll just support slices
-pub fn reduceSentinel(x: var) PointerWithSentinel(@TypeOf(x), defaultSentinel(@TypeOf(x))) {
+pub fn reduceSentinel(x: anytype) PointerWithSentinel(@TypeOf(x), defaultSentinel(@TypeOf(x))) {
     return reduceSentinelCustom(x, 0);//defaultSentinel(@TypeOf(x)));
 }
-pub fn reduceSentinelCustom(x: var, comptime sentinelValue: var) PointerWithSentinel(@TypeOf(x), sentinelValue) {
+pub fn reduceSentinelCustom(x: anytype, comptime sentinelValue: anytype) PointerWithSentinel(@TypeOf(x), sentinelValue) {
     const T = @TypeOf(x);
     const errorMsg = "expected a slice type but got: " ++ @typeName(T);
     switch (@typeInfo(T))
@@ -175,7 +175,7 @@ pub fn reduceSentinelCustom(x: var, comptime sentinelValue: var) PointerWithSent
 //    }
 //}
 // For now, only accept many pointers and slices
-//pub fn assumeSentinel(x: var) AssumeSentinel(@TypeOf(x)) {
+//pub fn assumeSentinel(x: anytype) AssumeSentinel(@TypeOf(x)) {
 //    const T = @TypeOf(x);
 //    const errorMsg = "assumeSentinel does not support type: " ++ @typeName(T);
 //    // TODO:Return Either SentinelPtr or SentinelSlice

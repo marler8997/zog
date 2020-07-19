@@ -10,7 +10,7 @@ const LimitSliceTypeInfo = struct {
     alignment: comptime_int,
     child: type,
     is_allowzero: bool,
-    sentinel: var,
+    sentinel: anytype,
 };
 
 pub fn limitSliceTypeInfo(comptime T: type) LimitSliceTypeInfo {
@@ -147,7 +147,7 @@ pub fn LimitSlice(comptime info: LimitSliceTypeInfo) type { return struct {
 //}
 
 
-pub inline fn limitSlice(x: var) LimitSlice(limitSliceTypeInfo(@TypeOf(x))) {
+pub inline fn limitSlice(x: anytype) LimitSlice(limitSliceTypeInfo(@TypeOf(x))) {
     const T = @TypeOf(x);
     const errorMsg = "limitSlice does not support type: " ++ @typeName(T);
     switch (@typeInfo(T)) {
@@ -170,10 +170,10 @@ test "limitSlice" {
     //zog.range.testRange(&"abc", limitSlice("abc"));
 }
 
-pub fn ptrLessThan(left: var, right: var) bool {
+pub fn ptrLessThan(left: anytype, right: anytype) bool {
     return @ptrToInt(left) < @ptrToInt(right);
 }
 
-pub fn limitPointersToSlice(ptr: var, limit: var) stdext.meta.SliceType(@TypeOf(ptr)) {
+pub fn limitPointersToSlice(ptr: anytype, limit: anytype) stdext.meta.SliceType(@TypeOf(ptr)) {
     return ptr[0 .. (@ptrToInt(limit) - @ptrToInt(ptr)) / @sizeOf(@TypeOf(ptr).Child)];
 }

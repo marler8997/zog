@@ -26,7 +26,7 @@ pub fn Strtok(comptime Pointer: type) type {
     };
 }
 
-pub fn strtok(str: var, delims: []const u8) Strtok(ArrayPointerType(@TypeOf(str))) {
+pub fn strtok(str: anytype, delims: []const u8) Strtok(ArrayPointerType(@TypeOf(str))) {
     switch (@typeInfo(@TypeOf(str))) {
         .Pointer => |info| {
 
