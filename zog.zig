@@ -15,5 +15,5 @@ pub const cmdlinetool = @import("./cmdlinetool.zig");
 const std = @import("std");
 
 test "" {
-    std.meta.refAllDecls(@This());
+    std.testing.refAllDecls(@This());
 }
