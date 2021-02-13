@@ -14,7 +14,7 @@ const testing = std.testing;
 /// and user-defined types in the same way.  Because you can't add member functions
 /// to primitive types, this function will either detect and support the primitive type
 /// or it will check if the given range has the `empty` member function.
-pub inline fn empty(r: anytype) bool {
+pub fn empty(r: anytype) callconv(.Inline) bool {
     switch (@typeInfo(@TypeOf(r))) {
         .Array => |info| return r.len == 0,
         .Pointer => |info| {

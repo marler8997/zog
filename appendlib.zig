@@ -3,7 +3,7 @@ const std = @import("std");
 pub fn Appender(comptime T : type) type {
     return struct {
         appendSliceFunc : fn(self: *@This(), slice: []const T) void,
-        pub inline fn appendSlice(self: *@This(), slice: []const T) void {
+        pub fn appendSlice(self: *@This(), slice: []const T) callconv(.Inline) void {
             self.appendSliceFunc(self, slice);
         }
     };

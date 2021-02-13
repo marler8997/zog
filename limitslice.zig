@@ -147,7 +147,7 @@ pub fn LimitSlice(comptime info: LimitSliceTypeInfo) type { return struct {
 //}
 
 
-pub inline fn limitSlice(x: anytype) LimitSlice(limitSliceTypeInfo(@TypeOf(x))) {
+pub fn limitSlice(x: anytype) callconv(.Inline) LimitSlice(limitSliceTypeInfo(@TypeOf(x))) {
     const T = @TypeOf(x);
     const errorMsg = "limitSlice does not support type: " ++ @typeName(T);
     switch (@typeInfo(T)) {

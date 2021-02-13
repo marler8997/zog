@@ -564,7 +564,7 @@ pub fn length(rref: anytype) usize {
 //        else => @compileError("not implemented"),
 //    }
 //}
-//pub inline fn range(x: anytype) RangeType(@TypeOf(x)) {
+//pub fn range(x: anytype) callconv(.Inline) RangeType(@TypeOf(x)) {
 //    switch (@typeInfo(@TypeOf(x))) {
 //        .Array => |info| @compileError("cannot create a range from a static array passed-by-value: " ++ @typeName(@TypeOf(x))),
 //        .Pointer => |info| switch (info.size) {
