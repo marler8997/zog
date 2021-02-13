@@ -26,7 +26,7 @@ fn logRun(allocator: *std.mem.Allocator, argv: []const []const u8) !void {
     var appender = appendlib.FixedAppender(u8).init(buffer);
     runutil.appendCommandString(&appender.appender, argv);
     std.debug.assert(appender.full());
-    log("[RUN] {}", .{buffer});
+    log("[RUN] {s}", .{buffer});
 }
 
 pub fn runGetOutput(allocator: *std.mem.Allocator, args: anytype) !std.ChildProcess.ExecResult {
@@ -45,7 +45,7 @@ pub fn runGetOutputArray(allocator: *std.mem.Allocator, argv: []const []const u8
         .max_output_bytes = std.math.maxInt(usize),
         .expand_arg0 = .no_expand,
     }) catch |err|{
-        log("Error: failed to execute '{}': {}", .{argv[0], err});
+        log("Error: failed to execute '{s}': {}", .{argv[0], err});
         return ErrorReported;
     };
 }
@@ -66,11 +66,11 @@ pub fn dumpExecResult(result: std.ChildProcess.ExecResult) bool {
     var hasOutput = false;
     if (result.stdout.len > 0) {
         hasOutput = true;
-        log("{}", .{result.stdout});
+        log("{s}", .{result.stdout});
     }
     if (result.stderr.len > 0) {
         hasOutput = true;
-        log("{}", .{result.stderr});
+        log("{s}", .{result.stderr});
     }
     return hasOutput;
 }
