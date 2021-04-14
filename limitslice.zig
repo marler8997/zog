@@ -153,7 +153,10 @@ pub fn limitSlice(x: anytype) callconv(.Inline) LimitSlice(limitSliceTypeInfo(@T
     switch (@typeInfo(T)) {
         .Pointer => |info| switch (info.size) {
             .One => switch (@typeInfo(info.child)) {
-                .Array => |array_info| return .{ .ptr = x, .limit = x + x.len },
+                .Array => |array_info| return .{
+                    .ptr = x,
+                    .limit = @as(LimitSlice(limitSliceTypeInfo(T)).ManyPtr, @ptrToInt(x)) + x.len,
+                },
                 else => @compileError(errorMsg),
             },
             .Slice => return .{ .ptr = x.ptr, .limit = x.ptr + x.len },
@@ -166,7 +169,7 @@ pub fn limitSlice(x: anytype) callconv(.Inline) LimitSlice(limitSliceTypeInfo(@T
 }
 
 test "limitSlice" {
-    testing.expect(limitSlice("a").ptr == "a"[0..]);
+    testing.expect(limitSlice("a").ptr == @as([*]const u8, "a"));
     //zog.range.testRange(&"abc", limitSlice("abc"));
 }
 
