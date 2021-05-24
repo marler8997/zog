@@ -19,7 +19,7 @@ pub fn ptrEqual(a: anytype, b: anytype, len: usize) bool {
 
 
 
-pub fn indexOf(haystack: anytype, needle: anytype) anytype {
+pub fn indexOf(haystack: anytype, needle: anytype) @TypeOf(needle) {
     return indexOfPos(T, haystack, 0, needle);
 }
 
