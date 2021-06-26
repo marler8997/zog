@@ -239,7 +239,7 @@ test "CounterRange" {
 // TODO: the default file range should accept a buffer and return slices to that buffer
 pub const FileRange = struct {
     file: File,
-    pub fn rangeNext(self: *@This()) ?u8 { return file.read(); }
+    pub fn rangeNext(self: *@This()) ?u8 { _ = self; return file.read(); }
 };
 
 // `expected` is an array of the expected items that will be enumerated by `r`
@@ -656,7 +656,7 @@ test "indexOfAny" {
 //       rangePopMany and shrinkMany then we can use those
 pub fn sliceableOffsetLimit(rref: anytype, offset: usize, limit: usize) @TypeOf(rref.*) {
     const T = @TypeOf(rref.*);
-    const errorMsg = "don't know how to implement sliceableOffsetLimit for type " ++ @typeName(T);
+    //const errorMsg = "don't know how to implement sliceableOffsetLimit for type " ++ @typeName(T);
     switch (@typeInfo(T)) {
         .Pointer => return rref.*[offset .. limit],
         .Struct, .Union => {
@@ -729,7 +729,7 @@ pub fn SliceableSlice(comptime Sliceable: type) type {
 
 pub fn indexInRange(rref: anytype, index: usize) bool {
     const T = @TypeOf(rref.*);
-    const errorMsg = "don't know how to implement indexInRange for type " ++ @typeName(T);
+    //const errorMsg = "don't know how to implement indexInRange for type " ++ @typeName(T);
     switch (@typeInfo(T)) {
         .Struct, .Union => {
             if (@hasDecl(T, "rangeIndexInRange")) {

@@ -8,7 +8,7 @@ const testing = std.testing;
 /// Preserves all pointer attributes such as `const`/`volatile` etc.
 pub fn Slice(comptime T: type) type {
     return switch (@typeInfo(T)) {
-        .Array => |info| @compileError("Slice not implemented for arrays"),
+        .Array => @compileError("Slice not implemented for arrays"),
         .Pointer => |info| @Type(builtin.TypeInfo { .Pointer = builtin.TypeInfo.Pointer {
             .size = builtin.TypeInfo.Pointer.Size.Slice,
             .is_const = info.is_const,

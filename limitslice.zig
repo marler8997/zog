@@ -153,7 +153,7 @@ pub fn limitSlice(x: anytype) callconv(.Inline) LimitSlice(limitSliceTypeInfo(@T
     switch (@typeInfo(T)) {
         .Pointer => |info| switch (info.size) {
             .One => switch (@typeInfo(info.child)) {
-                .Array => |array_info| return .{
+                .Array => return .{
                     .ptr = x,
                     .limit = @as(LimitSlice(limitSliceTypeInfo(T)).ManyPtr, @ptrToInt(x)) + x.len,
                 },
