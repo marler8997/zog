@@ -36,7 +36,7 @@ pub fn runFailed(result: *const std.ChildProcess.ExecResult) bool {
     return !runPassed(result);
 }
 
-pub fn runCombineOutput(allocator: *std.mem.Allocator, result: *const std.ChildProcess.ExecResult) ![]u8 {
+pub fn runCombineOutput(allocator: std.mem.Allocator, result: *const std.ChildProcess.ExecResult) ![]u8 {
     if (result.stderr.len == 0) {
         return result.stdout;
     }

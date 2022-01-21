@@ -238,8 +238,8 @@ test "CounterRange" {
 // TODO: create a range that reads a file line-by-line
 // TODO: the default file range should accept a buffer and return slices to that buffer
 pub const FileRange = struct {
-    file: File,
-    pub fn rangeNext(self: *@This()) ?u8 { _ = self; return file.read(); }
+    file: std.fs.File,
+    pub fn rangeNext(self: *@This()) ?u8 { _ = self; return self.file.read(); }
 };
 
 // `expected` is an array of the expected items that will be enumerated by `r`
@@ -250,11 +250,11 @@ pub fn testRange(expected: anytype, r: anytype) void {
     while (next(&mutableRange)) |actual| {
         //testing.expect(expectedIndex < expected.len);
         if (expectedIndex >= expected.len) {
-            std.debug.warn("\nrange has more than the expected {} element(s)\n", expected.len);
+            std.debug.print("\nrange has more than the expected {} element(s)\n", expected.len);
             @panic("range has too many elements");
         }
-        //std.debug.warn("\nexpected: '{}' (type={})", expected[expectedIndex], @typeName(@TypeOf(expected[expectedIndex])));
-        //std.debug.warn("\nactual  : '{}' (type={})\n", actual, @typeName(@TypeOf(actual)));
+        //std.debug.print("\nexpected: '{}' (type={})", expected[expectedIndex], @typeName(@TypeOf(expected[expectedIndex])));
+        //std.debug.print("\nactual  : '{}' (type={})\n", actual, @typeName(@TypeOf(actual)));
         testing.expect(zog.compare.deepEquals(expected[expectedIndex], actual));
         expectedIndex += 1;
     }
@@ -662,7 +662,7 @@ pub fn sliceableOffsetLimit(rref: anytype, offset: usize, limit: usize) @TypeOf(
         .Struct, .Union => {
             return rref.sliceableOffsetLimit(offset, limit);
         },
-        else => return index < length(rref),
+        else => return offset < length(rref),
     }
 }
 

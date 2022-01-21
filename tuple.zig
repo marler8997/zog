@@ -12,7 +12,7 @@ pub fn copy(array: anytype, tuple: anytype) void {
     inline while (i < tuple.len) : (i += 1) array[i] = tuple[i];
 }
 
-pub fn alloc(comptime T: type, allocator: *std.mem.Allocator, tuple: anytype) ![]T {
+pub fn alloc(comptime T: type, allocator: std.mem.Allocator, tuple: anytype) ![]T {
     enforceIsTuple(@TypeOf(tuple));
     var array = try allocator.alloc(T, tuple.len);
     copy(array, tuple);

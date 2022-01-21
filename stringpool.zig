@@ -4,9 +4,9 @@ const StringHashMap = std.hash_map.StringHashMap;
 /// Takes an allocator and manages a set of strings.
 /// Every string in the pool is owned by the pool.
 pub const StringPool = struct {
-    allocator: *std.mem.Allocator,
+    allocator: std.mem.Allocator,
     map: StringHashMap([]const u8),
-    pub fn init(allocator: *std.mem.Allocator) @This() {
+    pub fn init(allocator: std.mem.Allocator) @This() {
         return @This() {
             .allocator = allocator,
             .map = StringHashMap([]const u8).init(allocator),

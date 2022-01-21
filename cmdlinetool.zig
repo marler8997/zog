@@ -10,7 +10,7 @@ const runutil = zog.runutil;
 
 pub fn log(comptime fmt: []const u8, args: anytype) void {
     tuple.enforceIsTuple(@TypeOf(args));
-    std.debug.warn(fmt ++ "\n", args);
+    std.debug.print(fmt ++ "\n", args);
 }
 
 pub const AlreadyReportedError = error {
@@ -19,7 +19,7 @@ pub const AlreadyReportedError = error {
 
 pub const ErrorReported = AlreadyReportedError.AlreadyReported;
 
-fn logRun(allocator: *std.mem.Allocator, argv: []const []const u8) !void {
+fn logRun(allocator: std.mem.Allocator, argv: []const []const u8) !void {
     var buffer = try allocator.alloc(u8, runutil.getCommandStringLength(argv));
     defer allocator.free(buffer);
 
@@ -29,13 +29,13 @@ fn logRun(allocator: *std.mem.Allocator, argv: []const []const u8) !void {
     log("[RUN] {s}", .{buffer});
 }
 
-pub fn runGetOutput(allocator: *std.mem.Allocator, args: anytype) !std.ChildProcess.ExecResult {
+pub fn runGetOutput(allocator: std.mem.Allocator, args: anytype) !std.ChildProcess.ExecResult {
     var argv = try tuple.alloc([]const u8, allocator, args);
     defer allocator.free(argv);
     return runGetOutputArray(allocator, argv);
 }
 
-pub fn runGetOutputArray(allocator: *std.mem.Allocator, argv: []const []const u8) !std.ChildProcess.ExecResult {
+pub fn runGetOutputArray(allocator: std.mem.Allocator, argv: []const []const u8) !std.ChildProcess.ExecResult {
     try logRun(allocator, argv);
     return std.ChildProcess.exec(.{
         .allocator = allocator,
@@ -50,12 +50,12 @@ pub fn runGetOutputArray(allocator: *std.mem.Allocator, argv: []const []const u8
     };
 }
 
-pub fn run(allocator: *std.mem.Allocator, args: anytype) !std.ChildProcess.Term {
+pub fn run(allocator: std.mem.Allocator, args: anytype) !std.ChildProcess.Term {
     var argv = try tuple.alloc([]const u8, allocator, args);
     defer allocator.free(argv);
     return runArray(allocator, argv);
 }
-pub fn runArray(allocator: *std.mem.Allocator, argv: []const []const u8) !std.ChildProcess.Term {
+pub fn runArray(allocator: std.mem.Allocator, argv: []const []const u8) !std.ChildProcess.Term {
     try logRun(allocator, argv);
     var proc = try std.ChildProcess.init(argv, allocator);
     defer proc.deinit();
@@ -75,7 +75,7 @@ pub fn dumpExecResult(result: std.ChildProcess.ExecResult) bool {
     return hasOutput;
 }
 
-pub fn enforceRunGetOutputPassed(allocator: *std.mem.Allocator, result: std.ChildProcess.ExecResult) ![]u8 {
+pub fn enforceRunGetOutputPassed(allocator: std.mem.Allocator, result: std.ChildProcess.ExecResult) ![]u8 {
     switch (result.term) {
         .Exited => {
             if (result.term.Exited != 0) {
