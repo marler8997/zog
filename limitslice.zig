@@ -10,7 +10,7 @@ const LimitSliceTypeInfo = struct {
     alignment: comptime_int,
     child: type,
     is_allowzero: bool,
-    sentinel: anytype,
+    sentinel: ?*const anyopaque,
 };
 
 pub fn limitSliceTypeInfo(comptime T: type) LimitSliceTypeInfo {
