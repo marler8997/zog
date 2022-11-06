@@ -15,7 +15,7 @@ pub const StringPool = struct {
     pub fn deinit(self: *StringPool) void {
         var it = self.map.iterator();
         while (it.next()) |entry| {
-            self.allocator.free(entry.value);
+            self.allocator.free(entry.value_ptr.*);
         }
         self.map.deinit();
     }
@@ -43,6 +43,6 @@ test "stringpool"
         var buf : [5]u8 = undefined;
         std.mem.copy(u8, buf[0..], "hello");
         const s2 = try pool.add(buf[0..]);
-        std.testing.expect(s.ptr == s2.ptr);
+        try std.testing.expect(s.ptr == s2.ptr);
     }
 }

@@ -9,11 +9,12 @@ const testing = std.testing;
 pub fn Slice(comptime T: type) type {
     return switch (@typeInfo(T)) {
         .Array => @compileError("Slice not implemented for arrays"),
-        .Pointer => |info| @Type(builtin.TypeInfo { .Pointer = builtin.TypeInfo.Pointer {
-            .size = builtin.TypeInfo.Pointer.Size.Slice,
+        .Pointer => |info| @Type(std.builtin.Type { .Pointer = std.builtin.Type.Pointer {
+            .size = std.builtin.Type.Pointer.Size.Slice,
             .is_const = info.is_const,
             .is_volatile = info.is_volatile,
             .alignment = info.alignment,
+            .address_space = info.address_space,
             .child = info.child,
             .is_allowzero = info.is_allowzero,
             .sentinel = info.sentinel,
@@ -23,19 +24,19 @@ pub fn Slice(comptime T: type) type {
 }
 
 test "std.meta.Slice" {
-    testing.expect(Slice([]u8) == []u8);
-    testing.expect(Slice([]const u8) == []const u8);
-    testing.expect(Slice(*u8) == []u8);
-    testing.expect(Slice(*const u8) == []const u8);
-    testing.expect(Slice([*]u8) == []u8);
-    testing.expect(Slice([*]const u8) == []const u8);
-    //testing.expect(Slice([10]u8) == []const u8);
+    try testing.expect(Slice([]u8) == []u8);
+    try testing.expect(Slice([]const u8) == []const u8);
+    try testing.expect(Slice(*u8) == []u8);
+    try testing.expect(Slice(*const u8) == []const u8);
+    try testing.expect(Slice([*]u8) == []u8);
+    try testing.expect(Slice([*]const u8) == []const u8);
+    //try testing.expect(Slice([10]u8) == []const u8);
 
-    testing.expect(Slice([]volatile u8) == []volatile u8);
-    testing.expect(Slice([]const volatile u8) == []const volatile u8);
-    testing.expect(Slice(*volatile u8) == []volatile u8);
-    testing.expect(Slice(*const volatile u8) == []const volatile u8);
-    testing.expect(Slice([*]volatile u8) == []volatile u8);
+    try testing.expect(Slice([]volatile u8) == []volatile u8);
+    try testing.expect(Slice([]const volatile u8) == []const volatile u8);
+    try testing.expect(Slice(*volatile u8) == []volatile u8);
+    try testing.expect(Slice(*const volatile u8) == []const volatile u8);
+    try testing.expect(Slice([*]volatile u8) == []volatile u8);
 }
 
 /// Converts slices or pointers to arrays to the [*]T "ManyPointer" equivalent.
@@ -46,11 +47,12 @@ pub fn ManyPointer(comptime T: type) type {
     switch (@typeInfo(T)) {
         .Pointer => |info| switch (info.size) {
             .One => switch (@typeInfo(info.child)) {
-                .Array => |array_info| return @Type(builtin.TypeInfo { .Pointer = builtin.TypeInfo.Pointer {
-                    .size = builtin.TypeInfo.Pointer.Size.Many,
+                .Array => |array_info| return @Type(std.builtin.Type { .Pointer = std.builtin.Type.Pointer {
+                    .size = std.builtin.Type.Pointer.Size.Many,
                     .is_const = true,
                     .is_volatile = false,
                     .alignment = @alignOf(array_info.child),
+                    .address_space = info.address_space,
                     .child = array_info.child,
                     .is_allowzero = false,
                     .sentinel = array_info.sentinel,
@@ -58,11 +60,12 @@ pub fn ManyPointer(comptime T: type) type {
                 else => @compileError(errorMsg),
             },
             .Many => return T,
-            .Slice, .C => return @Type(builtin.TypeInfo { .Pointer = builtin.TypeInfo.Pointer {
-                .size = builtin.TypeInfo.Pointer.Size.Many,
+            .Slice, .C => return @Type(std.builtin.Type { .Pointer = std.builtin.Type.Pointer {
+                .size = std.builtin.Type.Pointer.Size.Many,
                 .is_const = info.is_const,
                 .is_volatile = info.is_volatile,
                 .alignment = info.alignment,
+                .address_space = info.address_space,
                 .child = info.child,
                 .is_allowzero = info.is_allowzero,
                 .sentinel = info.sentinel,
@@ -79,12 +82,12 @@ pub fn ManyPointer(comptime T: type) type {
 }
 
 test "std.meta.ManyPointer" {
-    testing.expect(ManyPointer([]u8) == [*]u8);
-    testing.expect(ManyPointer([]const u8) == [*]const u8);
-    testing.expect(ManyPointer([*]u8) == [*]u8);
-    testing.expect(ManyPointer([*]const u8) == [*]const u8);
-    testing.expect(ManyPointer(*[10]u8) == [*]const u8);
-    testing.expect(ManyPointer(*const [10]u8) == [*]const u8);
+    try testing.expect(ManyPointer([]u8) == [*]u8);
+    try testing.expect(ManyPointer([]const u8) == [*]const u8);
+    try testing.expect(ManyPointer([*]u8) == [*]u8);
+    try testing.expect(ManyPointer([*]const u8) == [*]const u8);
+    try testing.expect(ManyPointer(*[10]u8) == [*]const u8);
+    try testing.expect(ManyPointer(*const [10]u8) == [*]const u8);
 }
 
 /// Given an array/pointer type, return the "single pointer" type `*Child`.
@@ -92,8 +95,8 @@ test "std.meta.ManyPointer" {
 pub fn SinglePointer(comptime T: type) type {
     switch (@typeInfo(T)) {
         .Array => |info| return *const info.child,
-        .Pointer => |info| return @Type(builtin.TypeInfo { .Pointer = builtin.TypeInfo.Pointer {
-            .size = builtin.TypeInfo.Pointer.Size.One,
+        .Pointer => |info| return @Type(std.builtin.Type { .Pointer = std.builtin.Type.Pointer {
+            .size = std.builtin.Type.Pointer.Size.One,
             .is_const = info.is_const,
             .is_volatile = info.is_volatile,
             .alignment = info.alignment,

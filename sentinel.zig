@@ -8,7 +8,7 @@ pub fn SentinelPtrRange(comptime T: type) type {
     //comptime {
         //std.debug.assert(T == zog.meta.ManyPointer(T));
         //switch (T) {
-        //    builtin.TypeInfo.Pointer => {
+        //    builtin.Type.Pointer => {
         //    },
         //    else => @compileError("SentinelPtr requires a [*]ptr type but got '" ++ @typeName(T) ++ "'"),
         //}
@@ -44,7 +44,7 @@ pub fn sentinelPtrRange(ptr: anytype) SentinelPtrRange(@TypeOf(ptr)) {
 //    comptime {
 //        std.debug.assert(T == zog.meta.ManyPointer(T));
 //        //switch (T) {
-//        //    builtin.TypeInfo.Pointer => {
+//        //    builtin.Type.Pointer => {
 //        //    },
 //        //    else => @compileError("SentinelPtr requires a [*]ptr type but got '" ++ @typeName(T) ++ "'"),
 //        //}
@@ -86,7 +86,7 @@ fn GetSliceType(comptime T: type) type {
             switch (info.size) {
                 .Slice => return type,
                 .One => switch (@typeInfo(info.child)) {
-                    .Array => return @Type(builtin.TypeInfo { .Pointer = .{
+                    .Array => return @Type(builtin.Type { .Pointer = .{
                         .size = .Slice,
                         .is_const = true,
                         .is_volatile = false,
@@ -116,7 +116,7 @@ pub fn PointerWithSentinel(comptime T: type, comptime sentinelValue: anytype) ty
                 if (info.sentinel) |_| {
                     @compileError("slice already has a sentinel" ++ @typeName(T));
                 }
-                return @Type(builtin.TypeInfo { .Pointer = builtin.TypeInfo.Pointer {
+                return @Type(builtin.Type { .Pointer = builtin.Type.Pointer {
                     .size = .Slice,
                     .is_const = info.is_const,
                     .is_volatile = info.is_volatile,

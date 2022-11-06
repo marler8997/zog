@@ -4,31 +4,33 @@ const testing = std.testing;
 
 const zog = @import("./zog.zig");
 
-const LimitSliceTypeInfo = struct {
+const LimitSliceType = struct {
     is_const: bool,
     is_volatile: bool,
     alignment: comptime_int,
+    address_space: std.builtin.AddressSpace,
     child: type,
     is_allowzero: bool,
     sentinel: ?*const anyopaque,
 };
 
-pub fn limitSliceTypeInfo(comptime T: type) LimitSliceTypeInfo {
-    const errorMsg = "limitSliceTypeInfo does not support type: " ++ @typeName(T);
+pub fn limitSliceType(comptime T: type) LimitSliceType {
+    const errorMsg = "limitSliceType does not support type: " ++ @typeName(T);
     switch (@typeInfo(T)) {
         .Pointer => |info| switch (info.size) {
             .One => switch (@typeInfo(info.child)) {
-                .Array => |array_info| return LimitSliceTypeInfo {
+                .Array => |array_info| return LimitSliceType {
                     .is_const = true,
                     .is_volatile = false,
                     .alignment = @alignOf(array_info.child),
+                    .address_space = info.address_space,
                     .child = array_info.child,
                     .is_allowzero = false,
                     .sentinel = array_info.sentinel,
                 },
                 else => @compileError(errorMsg),
             },
-            .Many, .Slice, .C => return LimitSliceTypeInfo {
+            .Many, .Slice, .C => return LimitSliceType {
                 .is_const = info.is_const,
                 .is_volatile = info.is_volatile,
                 .alignment = info.alignment,
@@ -41,12 +43,13 @@ pub fn limitSliceTypeInfo(comptime T: type) LimitSliceTypeInfo {
     }
 }
 
-pub fn LimitSlice(comptime info: LimitSliceTypeInfo) type { return struct {
+pub fn LimitSlice(comptime info: LimitSliceType) type { return struct {
     pub const ManyPtr = @Type(.{.Pointer = .{
         .size = .Many,
         .is_const = info.is_const,
         .is_volatile = info.is_volatile,
         .alignment = info.alignment,
+        .address_space = info.address_space,
         .child = info.child,
         .is_allowzero = info.is_allowzero,
         .sentinel = info.sentinel,
@@ -56,6 +59,7 @@ pub fn LimitSlice(comptime info: LimitSliceTypeInfo) type { return struct {
         .is_const = info.is_const,
         .is_volatile = info.is_volatile,
         .alignment = info.alignment,
+        .address_space = info.address_space,
         .child = info.child,
         .is_allowzero = info.is_allowzero,
         .sentinel = info.sentinel,
@@ -65,6 +69,7 @@ pub fn LimitSlice(comptime info: LimitSliceTypeInfo) type { return struct {
         .is_const = info.is_const,
         .is_volatile = info.is_volatile,
         .alignment = info.alignment,
+        .address_space = info.address_space,
         .child = info.child,
         .is_allowzero = info.is_allowzero,
         .sentinel = null,
@@ -147,7 +152,7 @@ pub fn LimitSlice(comptime info: LimitSliceTypeInfo) type { return struct {
 //}
 
 
-pub fn limitSlice(x: anytype) callconv(.Inline) LimitSlice(limitSliceTypeInfo(@TypeOf(x))) {
+pub fn limitSlice(x: anytype) callconv(.Inline) LimitSlice(limitSliceType(@TypeOf(x))) {
     const T = @TypeOf(x);
     const errorMsg = "limitSlice does not support type: " ++ @typeName(T);
     switch (@typeInfo(T)) {
@@ -155,7 +160,7 @@ pub fn limitSlice(x: anytype) callconv(.Inline) LimitSlice(limitSliceTypeInfo(@T
             .One => switch (@typeInfo(info.child)) {
                 .Array => return .{
                     .ptr = x,
-                    .limit = @as(LimitSlice(limitSliceTypeInfo(T)).ManyPtr, @ptrToInt(x)) + x.len,
+                    .limit = @ptrCast(LimitSlice(limitSliceType(T)).ManyPtr, x) + x.len,
                 },
                 else => @compileError(errorMsg),
             },
@@ -169,7 +174,7 @@ pub fn limitSlice(x: anytype) callconv(.Inline) LimitSlice(limitSliceTypeInfo(@T
 }
 
 test "limitSlice" {
-    testing.expect(limitSlice("a").ptr == @as([*]const u8, "a"));
+    try testing.expect(limitSlice("a").ptr == @as([*]const u8, "a"));
     //zog.range.testRange(&"abc", limitSlice("abc"));
 }
 

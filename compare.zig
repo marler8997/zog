@@ -6,13 +6,13 @@ const zog = @import("./zog.zig");
 /// where possible. Pointers are also followed.
 pub fn deepEquals(a: anytype, b: @TypeOf(a)) bool {
     switch (@typeInfo(@TypeOf(a))) {
-        builtin.TypeId.Pointer => |info| {
+        .Pointer => |info| {
             switch (info.size) {
-                builtin.TypeInfo.Pointer.Size.One,
-                builtin.TypeInfo.Pointer.Size.Many,
-                builtin.TypeInfo.Pointer.Size.C,
+                builtin.Type.Pointer.Size.One,
+                builtin.Type.Pointer.Size.Many,
+                builtin.Type.Pointer.Size.C,
                     => @compileError("not implemented"),
-                builtin.TypeInfo.Pointer.Size.Slice => return zog.mem.sliceEqual(a, b),
+                builtin.Type.Pointer.Size.Slice => return zog.mem.sliceEqual(a, b),
             }
         },
         else => return std.meta.eql(a, b),
