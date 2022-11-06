@@ -22,10 +22,7 @@ pub const ErrorReported = AlreadyReportedError.AlreadyReported;
 fn logRun(allocator: std.mem.Allocator, argv: []const []const u8) !void {
     var buffer = try allocator.alloc(u8, runutil.getCommandStringLength(argv));
     defer allocator.free(buffer);
-
-    var appender = appendlib.FixedAppender(u8).init(buffer);
-    runutil.appendCommandString(&appender.appender, argv);
-    std.debug.assert(appender.full());
+    runutil.writeCommandString(buffer.ptr, argv);
     log("[RUN] {s}", .{buffer});
 }
 
@@ -57,8 +54,7 @@ pub fn run(allocator: std.mem.Allocator, args: anytype) !std.ChildProcess.Term {
 }
 pub fn runArray(allocator: std.mem.Allocator, argv: []const []const u8) !std.ChildProcess.Term {
     try logRun(allocator, argv);
-    var proc = try std.ChildProcess.init(argv, allocator);
-    defer proc.deinit();
+    var proc = std.ChildProcess.init(argv, allocator);
     return proc.spawnAndWait();
 }
 

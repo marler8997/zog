@@ -13,11 +13,16 @@ pub fn getCommandStringLength(argv: []const []const u8) usize {
     return len;
 }
 
-pub fn appendCommandString(appender: *appendlib.Appender(u8), argv: []const []const u8) void {
+pub fn writeCommandString(buf: [*]u8, argv: []const []const u8) void {
+    var next = buf;
     var prefix : []const u8 = "";
     for (argv) |arg| {
-        appender.appendSlice(prefix);
-        appender.appendSlice(arg);
+        if (prefix.len > 0) {
+            @memcpy(next, prefix.ptr, prefix.len);
+            next += prefix.len;
+        }
+        @memcpy(next, arg.ptr, arg.len);
+        next += arg.len;
         prefix = " ";
     }
 }
