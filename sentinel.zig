@@ -72,7 +72,7 @@ pub fn sentinelPtrRange(ptr: anytype) SentinelPtrRange(@TypeOf(ptr)) {
 
 pub fn defaultSentinelElement(comptime T: type) T {
     if (T == u8) {
-        return @intCast(T, 0);
+        return @intCast(0);
     } else @compileError("defaultSentinel not implemented for type: " ++ @typeName(T));
 }
 pub fn defaultSentinel(comptime T: type) std.meta.Child(GetSliceType(T)) {

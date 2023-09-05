@@ -3,7 +3,7 @@ const std = @import("std");
 pub fn sliceEqual(a: anytype, b: anytype) bool {
     if (a.len != b.len) return false;
     if (a.ptr == b.ptr) return true;
-    for (a) |item, index| {
+    for (a, 0..) |item, index| {
         if (b[index] != item) return false;
     }
     return true;

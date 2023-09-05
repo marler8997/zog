@@ -18,10 +18,10 @@ pub fn writeCommandString(buf: [*]u8, argv: []const []const u8) void {
     var prefix : []const u8 = "";
     for (argv) |arg| {
         if (prefix.len > 0) {
-            @memcpy(next, prefix.ptr, prefix.len);
+            @memcpy(next, prefix);
             next += prefix.len;
         }
-        @memcpy(next, arg.ptr, arg.len);
+        @memcpy(next, arg);
         next += arg.len;
         prefix = " ";
     }

@@ -87,22 +87,22 @@ pub fn LimitSlice(comptime info: LimitSliceType) type { return struct {
     }
 
     pub fn rangeLength(self: *const @This()) usize {
-        return (@ptrToInt(self.limit) - @ptrToInt(self.ptr)) / @sizeOf(info.child);
+        return (@intFromPtr(self.limit) - @intFromPtr(self.ptr)) / @sizeOf(info.child);
     }
     // Implementing indexInRange since length requires a divide
     pub fn rangeIndexInRange(self: *const @This(), index: usize) bool {
-        return @ptrToInt(self.ptr + index) < @ptrToInt(self.limit);
+        return @intFromPtr(self.ptr + index) < @intFromPtr(self.limit);
     }
 
     pub fn rangeElementRefAt(self: *@This(), index: usize) OnePtr {
         const ptr = self.ptr + index;
-        std.debug.assert(@ptrToInt(ptr) < @ptrToInt(self.limit));
+        std.debug.assert(@intFromPtr(ptr) < @intFromPtr(self.limit));
         return &ptr[0];
     }
 
     pub fn rangePopMany(self: *@This(), count: usize) void {
         const newPtr = self.ptr + count;
-        std.debug.assert(@ptrToInt(newPtr) <= @ptrToInt(self.limit));
+        std.debug.assert(@intFromPtr(newPtr) <= @intFromPtr(self.limit));
         self.ptr = newPtr;
     }
 
@@ -117,13 +117,13 @@ pub fn LimitSlice(comptime info: LimitSliceType) type { return struct {
     // with rangeClone() and rangePopMany()
     //
     //pub fn sliceableOffsetOnly(self: *@This(), offset: usize) @This() {
-    //    if (@ptrToInt(self.ptr + offset) > @ptrToInt(self.limit))
+    //    if (@intFromPtr(self.ptr + offset) > @intFromPtr(self.limit))
     //        unreachable;
     //    return @This() { .ptr = self.ptr + offset, .limit = self.limit, };
     //}
     pub fn sliceableOffsetLimit(self: *@This(), offset: usize, limit: usize) @This() {
         std.debug.assert(offset <= limit);
-        std.debug.assert(@ptrToInt(self.ptr + limit) <= @ptrToInt(self.limit));
+        std.debug.assert(@intFromPtr(self.ptr + limit) <= @intFromPtr(self.limit));
         return @This() { .ptr = self.ptr + offset, .limit = self.ptr + limit, };
     }
 
@@ -160,7 +160,7 @@ pub fn limitSlice(x: anytype) callconv(.Inline) LimitSlice(limitSliceType(@TypeO
             .One => switch (@typeInfo(info.child)) {
                 .Array => return .{
                     .ptr = x,
-                    .limit = @ptrCast(LimitSlice(limitSliceType(T)).ManyPtr, x) + x.len,
+                    .limit = @as(LimitSlice(limitSliceType(T)).ManyPtr, @ptrCast(x)) + x.len,
                 },
                 else => @compileError(errorMsg),
             },
@@ -179,9 +179,9 @@ test "limitSlice" {
 }
 
 pub fn ptrLessThan(left: anytype, right: anytype) bool {
-    return @ptrToInt(left) < @ptrToInt(right);
+    return @intFromPtr(left) < @intFromPtr(right);
 }
 
 //pub fn limitPointersToSlice(ptr: anytype, limit: anytype) stdext.meta.SliceType(@TypeOf(ptr)) {
-//    return ptr[0 .. (@ptrToInt(limit) - @ptrToInt(ptr)) / @sizeOf(@TypeOf(ptr).Child)];
+//    return ptr[0 .. (@intFromPtr(limit) - @intFromPtr(ptr)) / @sizeOf(@TypeOf(ptr).Child)];
 //}
